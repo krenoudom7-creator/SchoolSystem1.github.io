@@ -1,0 +1,418 @@
+import express from 'express';
+import { createServer as createViteServer } from 'vite';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { db } from './src/services/firebase.ts';
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+} from 'firebase/firestore';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Initial fallback admin if database is freshly initiated
+const DEFAULT_ROOT_ADMIN = {
+  id: 'usr-admin',
+  username: 'admin',
+  password: 'admin123',
+  name: 'លោក ស៊ុយ បូរ៉ា (Admin)',
+  role: 'admin',
+  email: 'admin@toulsambour.edu.kh',
+  phone: '012 888 999',
+  status: 'active',
+  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+  createdAt: '2025-10-01',
+};
+
+async function startServer() {
+  const app = express();
+  const PORT = Number(process.env.PORT) || 3000;
+
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true }));
+
+  // CORS Middleware for Mobile and Desktop cross-origin requests
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+
+  // -------------------------------------------------------------
+  // 3-Tier System Status & Health Check API
+  // -------------------------------------------------------------
+  app.get('/api/system/status', async (req, res) => {
+    let dbStatus = 'connected';
+    let dbError = null;
+    try {
+      await getDoc(doc(db, 'test', 'connection'));
+    } catch (e: any) {
+      if (e?.message && e.message.includes('the client is offline')) {
+        dbStatus = 'offline';
+        dbError = e.message;
+      }
+    }
+
+    res.json({
+      architecture: '3-Tier Full-Stack (Frontend + Backend API + Central Database)',
+      frontend: {
+        name: 'React SPA + Tailwind CSS + Mobile/Desktop Responsive',
+        status: 'online',
+      },
+      backend: {
+        name: 'Node.js Express REST API Server',
+        port: PORT,
+        status: 'online',
+      },
+      centralDatabase: {
+        name: 'Google Firebase Firestore Cloud Database',
+        databaseId: 'ai-studio-toulsambourschoo-72eb52ce-3fa8-4250-a71e-e7843de9faf3',
+        status: dbStatus,
+        error: dbError,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  app.get('/api/health', (req, res) => {
+    res.json({
+      status: 'online',
+      school: 'អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ',
+      system: 'Hun Sen Toulsambour School Management System',
+      version: '4.0.0',
+      database: 'Firebase Firestore Cloud Database Connected',
+      timestamp: new Date().toISOString(),
+      platform: 'Full-Stack Express + React + Firebase Cloud DB',
+    });
+  });
+
+  // -------------------------------------------------------------
+  // Central Database User Management API Endpoints
+  // -------------------------------------------------------------
+
+  // 1. GET /api/users - Fetch all users from Central Database
+  app.get('/api/users', async (req, res) => {
+    try {
+      const snapshot = await getDocs(collection(db, 'users'));
+      const users: any[] = [];
+      snapshot.forEach((docSnap) => {
+        users.push(docSnap.data());
+      });
+
+      // Ensure root admin always exists
+      if (!users.some((u) => u.username === 'admin')) {
+        users.unshift(DEFAULT_ROOT_ADMIN);
+        // Persist default admin to cloud database asynchronously
+        setDoc(doc(db, 'users', DEFAULT_ROOT_ADMIN.id), DEFAULT_ROOT_ADMIN).catch(() => {});
+      }
+
+      res.json({
+        success: true,
+        count: users.length,
+        users,
+      });
+    } catch (err: any) {
+      console.warn('Backend /api/users read fallback:', err.message);
+      res.json({
+        success: true,
+        count: 1,
+        users: [DEFAULT_ROOT_ADMIN],
+        note: 'Fallback to default admin',
+      });
+    }
+  });
+
+  // 2. POST /api/users - Create new user in Central Database
+  app.post('/api/users', async (req, res) => {
+    try {
+      const { username, password, name, role, email, phone, avatar, status } = req.body;
+      if (!username || !password || !name) {
+        return res.status(400).json({
+          success: false,
+          error: 'Username, password, and name are required',
+        });
+      }
+
+      const userId = `usr-${Date.now()}`;
+      const newUser = {
+        id: userId,
+        username: username.trim(),
+        password: password.trim(),
+        name: name.trim(),
+        role: role || 'teacher',
+        email: email ? email.trim() : `${username.trim()}@toulsambour.edu.kh`,
+        phone: phone || '',
+        avatar: avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        status: status || 'active',
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+
+      await setDoc(doc(db, 'users', userId), newUser);
+
+      res.status(201).json({
+        success: true,
+        message: 'អ្នកប្រើប្រាស់ត្រូវបានបង្កើតក្នុង Central Database ដោយជោគជ័យ',
+        user: newUser,
+      });
+    } catch (err: any) {
+      console.error('Error creating user in backend:', err);
+      res.status(500).json({
+        success: false,
+        error: err.message || 'Failed to create user in Central Database',
+      });
+    }
+  });
+
+  // 3. PUT /api/users/:id - Update user in Central Database
+  app.put('/api/users/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+
+      const userDocRef = doc(db, 'users', id);
+      const existingSnap = await getDoc(userDocRef);
+
+      if (!existingSnap.exists()) {
+        // If not found in cloud, create it
+        const newUser = { id, ...updates };
+        await setDoc(userDocRef, newUser);
+        return res.json({
+          success: true,
+          message: 'បានកែប្រែព័ត៌មានអ្នកប្រើប្រាស់ជោគជ័យ',
+          user: newUser,
+        });
+      }
+
+      await updateDoc(userDocRef, updates);
+      res.json({
+        success: true,
+        message: 'ព័ត៌មានត្រូវបានកែប្រែក្នុង Central Database ដោយជោគជ័យ',
+      });
+    } catch (err: any) {
+      console.error('Error updating user:', err);
+      res.status(500).json({
+        success: false,
+        error: err.message || 'Failed to update user',
+      });
+    }
+  });
+
+  // 4. DELETE /api/users/:id - Delete user from Central Database
+  app.delete('/api/users/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (id === 'usr-admin') {
+        return res.status(403).json({
+          success: false,
+          error: 'មិនអាចលុបគណនី Root Admin បានទេ',
+        });
+      }
+
+      await deleteDoc(doc(db, 'users', id));
+      res.json({
+        success: true,
+        message: 'បានលុបគណនីពី Central Database ដោយជោគជ័យ',
+      });
+    } catch (err: any) {
+      console.error('Error deleting user:', err);
+      res.status(500).json({
+        success: false,
+        error: err.message || 'Failed to delete user',
+      });
+    }
+  });
+
+  // 5. GET /api/system/access-code - Get current shared universal system access code
+  app.get('/api/system/access-code', (req, res) => {
+    res.json({
+      success: true,
+      accessCode: DEFAULT_ROOT_ADMIN.password,
+    });
+  });
+
+  // 6. PUT /api/system/access-code - Update shared universal access code for ALL users
+  app.put('/api/system/access-code', async (req, res) => {
+    try {
+      const { accessCode } = req.body;
+      if (!accessCode || accessCode.trim().length < 4) {
+        return res.status(400).json({
+          success: false,
+          error: 'លេខកូដសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ ៤ តួអក្សរ',
+        });
+      }
+      const newCode = accessCode.trim();
+      DEFAULT_ROOT_ADMIN.password = newCode;
+
+      // Update in cloud Firestore for all users if reachable
+      try {
+        const snapshot = await getDocs(collection(db, 'users'));
+        const updatePromises: Promise<any>[] = [];
+        snapshot.forEach((docSnap) => {
+          updatePromises.push(updateDoc(doc(db, 'users', docSnap.id), { password: newCode }));
+        });
+        await Promise.allSettled(updatePromises);
+      } catch (cloudErr) {
+        console.warn('Could not update all cloud user passwords:', cloudErr);
+      }
+
+      res.json({
+        success: true,
+        message: 'លេខកូដសម្ងាត់រួមប្រព័ន្ធត្រូវបានផ្លាស់ប្ដូរសម្រាប់គ្រប់គណនីទាំងអស់ដោយជោគជ័យ',
+        accessCode: newCode,
+      });
+    } catch (err: any) {
+      console.error('Error updating system access code:', err);
+      res.status(500).json({
+        success: false,
+        error: err.message || 'Failed to update system access code',
+      });
+    }
+  });
+
+  // 7. POST /api/users/:id/reset-password - Password reset updates the single universal system code
+  app.post('/api/users/:id/reset-password', async (req, res) => {
+    try {
+      const { newPassword } = req.body;
+      if (!newPassword || newPassword.trim().length < 4) {
+        return res.status(400).json({
+          success: false,
+          error: 'ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ ៤ តួអក្សរ',
+        });
+      }
+
+      const newCode = newPassword.trim();
+      DEFAULT_ROOT_ADMIN.password = newCode;
+
+      // Update in cloud Firestore for all users
+      try {
+        const snapshot = await getDocs(collection(db, 'users'));
+        const updatePromises: Promise<any>[] = [];
+        snapshot.forEach((docSnap) => {
+          updatePromises.push(updateDoc(doc(db, 'users', docSnap.id), { password: newCode }));
+        });
+        await Promise.allSettled(updatePromises);
+      } catch (cloudErr) {
+        console.warn('Could not update all cloud user passwords on reset:', cloudErr);
+      }
+
+      res.json({
+        success: true,
+        message: 'លេខកូដសម្ងាត់រួមត្រូវបានផ្លាស់ប្ដូរក្នុង Central Database ដោយជោគជ័យសម្រាប់គ្រប់គណនីទាំងអស់',
+        accessCode: newCode,
+      });
+    } catch (err: any) {
+      console.error('Error resetting password:', err);
+      res.status(500).json({
+        success: false,
+        error: err.message || 'Failed to reset password',
+      });
+    }
+  });
+
+  // -------------------------------------------------------------
+  // School General Info & Telegram Proxy
+  // -------------------------------------------------------------
+  app.get('/api/school/info', (req, res) => {
+    res.json({
+      nameKm: 'អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ',
+      nameEn: 'Hun Sen Toulsambour Secondary School',
+      code: 'HTSS-070809',
+      academicYear: '២០២៥-២០២៦',
+      location: 'ឃុំទួលសំបួរ ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម',
+      ministry: 'ក្រសួងអប់រំ យុវជន និងកីឡា',
+      department: 'មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ចាម',
+      office: 'ការិយាល័យអប់រំ យុវជន និងកីឡា ស្រុកស្ទឹងត្រង់',
+      grades: ['ថ្នាក់ទី ៧', 'ថ្នាក់ទី ៨', 'ថ្នាក់ទី ៩'],
+      educationLevel: 'អនុវិទ្យាល័យ (Secondary Education)',
+      contact: {
+        phone: '012 888 999',
+        telegram: '@ToulsambourSchoolBot',
+      },
+    });
+  });
+
+  app.post('/api/telegram/send', async (req, res) => {
+    const { botToken, chatId, message } = req.body;
+    if (!chatId || !message) {
+      return res.status(400).json({ error: 'chatId and message are required' });
+    }
+
+    const token = botToken || process.env.TELEGRAM_BOT_TOKEN;
+    if (!token || token.includes('Simulated')) {
+      return res.json({
+        ok: true,
+        simulated: true,
+        message: 'បានកត់ត្រាការជូនដំណឹង Telegram ដោយជោគជ័យ (Simulated)',
+        sentAt: new Date().toISOString(),
+      });
+    }
+
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: 'HTML',
+        }),
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (err: any) {
+      console.error('Telegram dispatch error:', err);
+      res.status(500).json({ error: err.message || 'Telegram dispatch failed' });
+    }
+  });
+
+  app.get('/api/device/capabilities', (req, res) => {
+    const userAgent = req.headers['user-agent'] || '';
+    const isMobile = /mobile|android|iphone|ipad|phone/i.test(userAgent);
+    const isTablet = /tablet|ipad/i.test(userAgent);
+    res.json({
+      deviceType: isMobile ? (isTablet ? 'tablet' : 'mobile') : 'desktop',
+      isMobile,
+      userAgent,
+      capabilities: {
+        touchOptimized: isMobile,
+        responsiveColumns: isMobile ? 1 : 3,
+        supportsRealTimeSync: true,
+        cloudDatabaseOnline: true,
+      },
+    });
+  });
+
+  // -------------------------------------------------------------
+  // Frontend Serving (Vite middleware in dev, Static in production)
+  // -------------------------------------------------------------
+  if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, 'dist')));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    });
+  } else {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Hun Sen Toulsambour School Server running on http://0.0.0.0:${PORT}`);
+  });
+}
+
+startServer().catch((err) => {
+  console.error('Fatal Server Error:', err);
+});

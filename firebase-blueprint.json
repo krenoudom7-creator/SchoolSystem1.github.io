@@ -1,0 +1,145 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "School system user profile and authentication information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "name": { "type": "string", "maxLength": 256 },
+        "username": { "type": "string", "maxLength": 64 },
+        "password": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["admin", "director", "teacher", "student", "parent"] },
+        "phone": { "type": "string", "maxLength": 64 },
+        "avatar": { "type": "string", "maxLength": 1048576 },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "associatedId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "email", "name", "role"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student profile at Hun Sen Toulsambour Secondary School",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 64 },
+        "khmerName": { "type": "string", "maxLength": 256 },
+        "latinName": { "type": "string", "maxLength": 256 },
+        "gender": { "type": "string", "enum": ["ប្រុស", "ស្រី"] },
+        "dob": { "type": "string", "maxLength": 64 },
+        "pob": { "type": "string", "maxLength": 1024 },
+        "address": { "type": "string", "maxLength": 1024 },
+        "phone": { "type": "string", "maxLength": 64 },
+        "parentName": { "type": "string", "maxLength": 256 },
+        "parentPhone": { "type": "string", "maxLength": 64 },
+        "parentRelationship": { "type": "string", "maxLength": 128 },
+        "photo": { "type": "string", "maxLength": 1048576 },
+        "classId": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "enum": ["កំពុងសិក្សា", "ផ្អាកការសិក្សា", "បោះបង់", "បញ្ចប់ការសិក្សា"] },
+        "enrollmentYear": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "studentId", "khmerName", "gender", "classId", "status"]
+    },
+    "Teacher": {
+      "title": "Teacher",
+      "description": "Teacher profile and assignment details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "teacherId": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 256 },
+        "gender": { "type": "string", "enum": ["ប្រុស", "ស្រី"] },
+        "dob": { "type": "string", "maxLength": 64 },
+        "phone": { "type": "string", "maxLength": 64 },
+        "email": { "type": "string", "maxLength": 256 },
+        "address": { "type": "string", "maxLength": 1024 },
+        "degree": { "type": "string", "maxLength": 256 },
+        "photo": { "type": "string", "maxLength": 1048576 },
+        "status": { "type": "string", "enum": ["កំពុងបង្រៀន", "សម្រាកព្យាបាល", "ផ្ទេរចេញ", "ចូលនិវត្តន៍"] },
+        "joinDate": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "teacherId", "name", "gender", "phone", "status"]
+    },
+    "SchoolClass": {
+      "title": "SchoolClass",
+      "description": "Classroom definition and grade level",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 128 },
+        "gradeLevel": { "type": "string", "maxLength": 64 },
+        "educationLevel": { "type": "string", "enum": ["kindergarten", "primary", "secondary", "high_school", "university"] },
+        "academicYearId": { "type": "string", "maxLength": 64 },
+        "roomNumber": { "type": "string", "maxLength": 32 },
+        "maxCapacity": { "type": "number" }
+      },
+      "required": ["id", "name", "gradeLevel", "educationLevel", "academicYearId"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Daily student attendance record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "sessionId": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "classId": { "type": "string", "maxLength": 64 },
+        "date": { "type": "string", "maxLength": 32 },
+        "status": { "type": "string", "enum": ["present", "absent_permission", "absent_no_permission", "late", "early_leave"] },
+        "reason": { "type": "string", "maxLength": 256 },
+        "recordedBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "sessionId", "studentId", "classId", "date", "status", "recordedBy"]
+    },
+    "ExamResult": {
+      "title": "ExamResult",
+      "description": "Student exam score record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "examId": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "classId": { "type": "string", "maxLength": 64 },
+        "totalScore": { "type": "number" },
+        "average": { "type": "number" },
+        "rank": { "type": "number" },
+        "gradeLetter": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "examId", "studentId", "classId", "totalScore", "average"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "System user profiles"
+    },
+    "/admins/{adminId}": {
+      "schema": "User",
+      "description": "School administrators"
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Enrolled students"
+    },
+    "/teachers/{teacherId}": {
+      "schema": "Teacher",
+      "description": "Teachers"
+    },
+    "/classes/{classId}": {
+      "schema": "SchoolClass",
+      "description": "Classes"
+    },
+    "/attendanceRecords/{recordId}": {
+      "schema": "AttendanceRecord",
+      "description": "Daily attendance logs"
+    },
+    "/examResults/{resultId}": {
+      "schema": "ExamResult",
+      "description": "Exam performance records"
+    }
+  }
+}

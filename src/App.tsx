@@ -1,0 +1,361 @@
+import React, { useState, useEffect } from 'react';
+import { storage } from './services/storage.ts';
+import { User, Student, Teacher, SchoolClass, Subject, AttendanceRecord, Exam, ExamResult, AcademicYear, NotificationItem, AuditLogItem } from './types/index.ts';
+import { Header } from './components/Header.tsx';
+import { Sidebar, NavTab } from './components/Sidebar.tsx';
+import { DashboardView } from './components/DashboardView.tsx';
+import { AttendanceView } from './components/AttendanceView.tsx';
+import { AttendanceReportsView } from './components/AttendanceReportsView.tsx';
+import { StudentView } from './components/StudentView.tsx';
+import { TeacherView } from './components/TeacherView.tsx';
+import { ClassView } from './components/ClassView.tsx';
+import { SubjectView } from './components/SubjectView.tsx';
+import { AcademicYearView } from './components/AcademicYearView.tsx';
+import { TelegramNotificationView } from './components/TelegramNotificationView.tsx';
+import { SecurityBackupView } from './components/SecurityBackupView.tsx';
+import { GradeExamView } from './components/GradeExamView.tsx';
+import { TimetableView } from './components/TimetableView.tsx';
+import { UsersManagementView } from './components/UsersManagementView.tsx';
+import { LoginModal } from './components/LoginModal.tsx';
+import { LoginScreen } from './components/LoginScreen.tsx';
+import { PrintReportModal } from './components/PrintReportModal.tsx';
+import { checkAbsenceWarning } from './utils/calculations.ts';
+import { SCHOOL_LOGO_URL } from './utils/schoolLogo.ts';
+import { Menu, X, LayoutDashboard, CalendarCheck2, GraduationCap, FileText, MoreHorizontal } from 'lucide-react';
+
+export default function App() {
+  const [dbState, setDbState] = useState(() => storage.getDatabase());
+  const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
+  const [currentUser, setCurrentUser] = useState<User | null>(() => storage.getCurrentSession());
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  // Print modal state
+  const [printModalInfo, setPrintModalInfo] = useState<{
+    isOpen: boolean;
+    reportType: 'attendance' | 'exam';
+    data: any;
+  }>({
+    isOpen: false,
+    reportType: 'attendance',
+    data: null,
+  });
+
+  // Subscribe to storage changes
+  useEffect(() => {
+    const unsubscribe = storage.subscribe(() => {
+      setDbState({ ...storage.getDatabase() });
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleRefresh = () => {
+    setDbState({ ...storage.getDatabase() });
+  };
+
+  const handleLogout = () => {
+    storage.clearSession();
+    setCurrentUser(null);
+  };
+
+  // Trigger official print modal
+  const handleOpenPrintReport = (type: 'attendance' | 'exam', payload: any) => {
+    setPrintModalInfo({
+      isOpen: true,
+      reportType: type,
+      data: payload,
+    });
+  };
+
+  // If user is not authenticated, render full-screen login gate
+  if (!currentUser) {
+    return (
+      <LoginScreen
+        onLoginSuccess={(authedUser) => {
+          setCurrentUser(authedUser);
+          handleRefresh();
+        }}
+      />
+    );
+  }
+
+  // Count unexcused absence warnings for sidebar badge
+  const unexcusedCount = dbState.students.reduce((acc, student) => {
+    const studentRecs = dbState.attendanceRecords.filter((r) => r.studentId === student.id);
+    const warning = checkAbsenceWarning(studentRecs, 2);
+    return warning.isWarned ? acc + 1 : acc;
+  }, 0);
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col font-khmer text-slate-800 antialiased">
+      {/* Top Navigation Bar */}
+      <Header
+        currentUser={currentUser}
+        onSwitchUser={(user) => {
+          storage.setSession(user);
+          setCurrentUser(user);
+        }}
+        allUsers={dbState.users}
+        notifications={dbState.notifications}
+        onOpenNotifications={() => setCurrentTab('telegram')}
+        onOpenTelegramModal={() => setCurrentTab('telegram')}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
+        onLogout={handleLogout}
+      />
+
+      {/* Mobile Menu Bar Toggle */}
+      <div className="md:hidden bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between no-print">
+        <div className="flex items-center gap-2">
+          <img
+            src={SCHOOL_LOGO_URL}
+            alt="Logo"
+            className="w-7 h-7 object-cover scale-[1.38] rounded-full bg-white p-0.5 border border-amber-400"
+          />
+          <span className="font-moul text-xs text-amber-400">អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ</span>
+        </div>
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-1 rounded-md text-slate-300 hover:text-white cursor-pointer"
+        >
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar Desktop */}
+        <div className="hidden md:block">
+          <Sidebar
+            currentTab={currentTab}
+            onSelectTab={(tab) => setCurrentTab(tab)}
+            userRole={currentUser.role}
+            unexcusedCount={unexcusedCount}
+          />
+        </div>
+
+        {/* Mobile Sidebar Drawer */}
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 z-40 md:hidden flex">
+            <div
+              className="fixed inset-0 bg-slate-900/60"
+              onClick={() => setIsMobileMenuOpen(false)}
+            ></div>
+            <div className="relative flex-1 flex flex-col max-w-xs w-full bg-slate-900 z-50">
+              <Sidebar
+                currentTab={currentTab}
+                onSelectTab={(tab) => {
+                  setCurrentTab(tab);
+                  setIsMobileMenuOpen(false);
+                }}
+                userRole={currentUser.role}
+                unexcusedCount={unexcusedCount}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
+          {currentTab === 'dashboard' && (
+            <DashboardView
+              students={dbState.students}
+              teachers={dbState.teachers}
+              classes={dbState.classes}
+              attendanceRecords={dbState.attendanceRecords}
+              examResults={dbState.examResults}
+              userRole={currentUser.role}
+              onNavigate={(tab) => setCurrentTab(tab)}
+              onOpenTelegramModal={() => setCurrentTab('telegram')}
+            />
+          )}
+
+          {currentTab === 'attendance' && (
+            <AttendanceView
+              students={dbState.students}
+              classes={dbState.classes}
+              subjects={dbState.subjects}
+              academicYears={dbState.academicYears}
+              currentUser={currentUser}
+              onOpenTelegramModal={() => setCurrentTab('telegram')}
+            />
+          )}
+
+          {currentTab === 'attendance_reports' && (
+            <AttendanceReportsView
+              students={dbState.students}
+              classes={dbState.classes}
+              attendanceRecords={dbState.attendanceRecords}
+              onPrintOfficialReport={handleOpenPrintReport}
+            />
+          )}
+
+          {currentTab === 'grades' && (
+            <GradeExamView
+              students={dbState.students}
+              classes={dbState.classes}
+              subjects={dbState.subjects}
+              exams={dbState.exams}
+              examResults={dbState.examResults}
+              onRefresh={handleRefresh}
+              onPrintOfficialReport={handleOpenPrintReport}
+            />
+          )}
+
+          {currentTab === 'timetable' && (
+            <TimetableView
+              classes={dbState.classes}
+              teachers={dbState.teachers}
+              subjects={dbState.subjects}
+            />
+          )}
+
+          {currentTab === 'students' && (
+            <StudentView
+              students={dbState.students}
+              classes={dbState.classes}
+              onRefresh={handleRefresh}
+            />
+          )}
+
+          {currentTab === 'teachers' && (
+            <TeacherView
+              teachers={dbState.teachers}
+              classes={dbState.classes}
+              onRefresh={handleRefresh}
+            />
+          )}
+
+          {currentTab === 'classes' && (
+            <ClassView
+              classes={dbState.classes}
+              teachers={dbState.teachers}
+              onRefresh={handleRefresh}
+            />
+          )}
+
+          {currentTab === 'subjects' && (
+            <SubjectView
+              subjects={dbState.subjects}
+              teachers={dbState.teachers}
+              onRefresh={handleRefresh}
+            />
+          )}
+
+          {currentTab === 'academic_year' && (
+            <AcademicYearView
+              academicYears={dbState.academicYears}
+              classes={dbState.classes}
+              students={dbState.students}
+              onRefresh={handleRefresh}
+            />
+          )}
+
+          {currentTab === 'telegram' && (
+            <TelegramNotificationView
+              notifications={dbState.notifications}
+              students={dbState.students}
+              classes={dbState.classes}
+              onRefresh={handleRefresh}
+            />
+          )}
+
+          {currentTab === 'security_db' && (
+            <SecurityBackupView
+              auditLogs={dbState.auditLogs}
+              onRefresh={handleRefresh}
+            />
+          )}
+
+          {currentTab === 'users' && (
+            <UsersManagementView
+              users={dbState.users}
+              currentUser={currentUser}
+              onRefresh={handleRefresh}
+            />
+          )}
+        </main>
+      </div>
+
+      {/* Mobile Bottom Navigation Bar (សម្រាប់ទូរស័ព្ទដៃ) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-1.5 py-1.5 z-30 flex items-center justify-around no-print shadow-2xl safe-area-bottom">
+        <button
+          onClick={() => setCurrentTab('dashboard')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[10px] font-medium transition-colors cursor-pointer ${
+            currentTab === 'dashboard'
+              ? 'text-amber-400 font-bold bg-slate-800/80'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <LayoutDashboard className="w-4 h-4 mb-0.5" />
+          <span>ផ្ទាំងដើម</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('attendance')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[10px] font-medium transition-colors cursor-pointer ${
+            currentTab === 'attendance'
+              ? 'text-amber-400 font-bold bg-slate-800/80'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <CalendarCheck2 className="w-4 h-4 mb-0.5" />
+          <span>វត្តមាន</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('students')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[10px] font-medium transition-colors cursor-pointer ${
+            currentTab === 'students'
+              ? 'text-amber-400 font-bold bg-slate-800/80'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <GraduationCap className="w-4 h-4 mb-0.5" />
+          <span>សិស្ស</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('attendance_reports')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[10px] font-medium transition-colors cursor-pointer ${
+            currentTab === 'attendance_reports'
+              ? 'text-amber-400 font-bold bg-slate-800/80'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <FileText className="w-4 h-4 mb-0.5" />
+          <span>របាយការណ៍</span>
+        </button>
+
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[10px] font-medium transition-colors cursor-pointer ${
+            isMobileMenuOpen
+              ? 'text-amber-400 font-bold bg-slate-800/80'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <MoreHorizontal className="w-4 h-4 mb-0.5" />
+          <span>ម៉ឺនុយ</span>
+        </button>
+      </nav>
+
+      {/* Official A4 Print Modal */}
+      <PrintReportModal
+        isOpen={printModalInfo.isOpen}
+        onClose={() => setPrintModalInfo({ ...printModalInfo, isOpen: false })}
+        reportType={printModalInfo.reportType}
+        data={printModalInfo.data}
+      />
+
+      {/* Login Authentication Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={(authedUser) => {
+          storage.setSession(authedUser);
+          setCurrentUser(authedUser);
+          handleRefresh();
+        }}
+      />
+    </div>
+  );
+}

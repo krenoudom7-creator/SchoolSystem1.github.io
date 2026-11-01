@@ -1,0 +1,202 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'krenoudom7@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Entity Validators
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'email', 'name', 'role']) &&
+             data.keys().hasOnly(['id', 'email', 'name', 'role', 'username', 'password', 'phone', 'avatar', 'status', 'createdAt', 'associatedId']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.name is string && data.name.size() <= 256 &&
+             data.role in ['admin', 'director', 'teacher', 'student', 'parent'] &&
+             (!('username' in data) || (data.username is string && data.username.size() <= 64)) &&
+             (!('password' in data) || (data.password is string && data.password.size() <= 128)) &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 64)) &&
+             (!('avatar' in data) || (data.avatar is string && data.avatar.size() <= 1048576)) &&
+             (!('status' in data) || data.status in ['active', 'inactive']) &&
+             (!('associatedId' in data) || (data.associatedId is string && data.associatedId.size() <= 128)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+    }
+
+    function isValidStudent(data) {
+      return data.keys().hasAll(['id', 'studentId', 'khmerName', 'gender', 'classId', 'status']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.studentId is string && data.studentId.size() <= 64 &&
+             data.khmerName is string && data.khmerName.size() <= 256 &&
+             data.gender in ['ប្រុស', 'ស្រី'] &&
+             data.classId is string && data.classId.size() <= 64 &&
+             data.status in ['កំពុងសិក្សា', 'ផ្អាកការសិក្សា', 'បោះបង់', 'បញ្ចប់ការសិក្សា'] &&
+             (!('latinName' in data) || (data.latinName is string && data.latinName.size() <= 256)) &&
+             (!('dob' in data) || (data.dob is string && data.dob.size() <= 64)) &&
+             (!('pob' in data) || (data.pob is string && data.pob.size() <= 1024)) &&
+             (!('address' in data) || (data.address is string && data.address.size() <= 1024)) &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 64)) &&
+             (!('parentName' in data) || (data.parentName is string && data.parentName.size() <= 256)) &&
+             (!('parentPhone' in data) || (data.parentPhone is string && data.parentPhone.size() <= 64)) &&
+             (!('parentRelationship' in data) || (data.parentRelationship is string && data.parentRelationship.size() <= 128)) &&
+             (!('photo' in data) || (data.photo is string && data.photo.size() <= 1048576)) &&
+             (!('enrollmentYear' in data) || (data.enrollmentYear is string && data.enrollmentYear.size() <= 64));
+    }
+
+    function isValidTeacher(data) {
+      return data.keys().hasAll(['id', 'teacherId', 'name', 'gender', 'phone', 'status']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.teacherId is string && data.teacherId.size() <= 64 &&
+             data.name is string && data.name.size() <= 256 &&
+             data.gender in ['ប្រុស', 'ស្រី'] &&
+             data.phone is string && data.phone.size() <= 64 &&
+             data.status in ['កំពុងបង្រៀន', 'សម្រាកព្យាបាល', 'ផ្ទេរចេញ', 'ចូលនិវត្តន៍'] &&
+             (!('dob' in data) || (data.dob is string && data.dob.size() <= 64)) &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 256)) &&
+             (!('address' in data) || (data.address is string && data.address.size() <= 1024)) &&
+             (!('degree' in data) || (data.degree is string && data.degree.size() <= 256)) &&
+             (!('photo' in data) || (data.photo is string && data.photo.size() <= 1048576)) &&
+             (!('joinDate' in data) || (data.joinDate is string && data.joinDate.size() <= 64)) &&
+             (!('assignedClassId' in data) || (data.assignedClassId is string && data.assignedClassId.size() <= 64)) &&
+             (!('subjects' in data) || (data.subjects is list && data.subjects.size() <= 20));
+    }
+
+    function isValidClass(data) {
+      return data.keys().hasAll(['id', 'name', 'gradeLevel', 'educationLevel', 'academicYearId']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 128 &&
+             data.gradeLevel is string && data.gradeLevel.size() <= 64 &&
+             data.educationLevel in ['kindergarten', 'primary', 'secondary', 'high_school', 'university'] &&
+             data.academicYearId is string && data.academicYearId.size() <= 64 &&
+             (!('roomNumber' in data) || (data.roomNumber is string && data.roomNumber.size() <= 32)) &&
+             (!('homeroomTeacherId' in data) || (data.homeroomTeacherId is string && data.homeroomTeacherId.size() <= 64)) &&
+             (!('homeroomTeacherName' in data) || (data.homeroomTeacherName is string && data.homeroomTeacherName.size() <= 128)) &&
+             (!('maxCapacity' in data) || (data.maxCapacity is number && data.maxCapacity >= 0 && data.maxCapacity <= 200)) &&
+             (!('currentStudentCount' in data) || (data.currentStudentCount is number && data.currentStudentCount >= 0));
+    }
+
+    function isValidAttendanceRecord(data) {
+      return data.keys().hasAll(['id', 'sessionId', 'studentId', 'classId', 'date', 'status', 'recordedBy']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.sessionId is string && data.sessionId.size() <= 128 &&
+             data.studentId is string && data.studentId.size() <= 128 &&
+             data.classId is string && data.classId.size() <= 64 &&
+             data.date is string && data.date.size() <= 32 &&
+             data.status in ['present', 'absent_permission', 'absent_no_permission', 'late', 'early_leave'] &&
+             data.recordedBy is string && data.recordedBy.size() <= 128 &&
+             (!('studentName' in data) || (data.studentName is string && data.studentName.size() <= 128)) &&
+             (!('reason' in data) || (data.reason is string && data.reason.size() <= 256)) &&
+             (!('recordedByName' in data) || (data.recordedByName is string && data.recordedByName.size() <= 128)) &&
+             (!('subjectId' in data) || (data.subjectId is string && data.subjectId.size() <= 64)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+    }
+
+    function isValidExamResult(data) {
+      return data.keys().hasAll(['id', 'examId', 'studentId', 'classId', 'totalScore', 'average']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.examId is string && data.examId.size() <= 128 &&
+             data.studentId is string && data.studentId.size() <= 128 &&
+             data.classId is string && data.classId.size() <= 64 &&
+             data.totalScore is number && data.totalScore >= 0 &&
+             data.average is number && data.average >= 0 &&
+             (!('studentName' in data) || (data.studentName is string && data.studentName.size() <= 128)) &&
+             (!('rank' in data) || (data.rank is number && data.rank >= 0)) &&
+             (!('gradeLetter' in data) || (data.gradeLetter is string && data.gradeLetter.size() <= 64)) &&
+             (!('remarks' in data) || (data.remarks is string && data.remarks.size() <= 256)) &&
+             (!('scores' in data) || (data.scores is map));
+    }
+
+    // Connection Healthcheck endpoint
+    match /test/{testId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get, list: if true;
+      allow create: if isValidId(userId) && (isAdmin() || isValidUser(incoming()));
+      allow update: if isValidId(userId) && (isAdmin() || isValidUser(incoming()));
+      allow delete: if isValidId(userId) && (isAdmin() || isSignedIn());
+    }
+
+    // Admins Collection (Restricted to Root Admins)
+    match /admins/{adminId} {
+      allow get, list: if true;
+      allow write: if isValidId(adminId) && isAdmin();
+    }
+
+    // Students Collection
+    match /students/{studentId} {
+      allow get, list: if true;
+      allow create: if isValidId(studentId) && (isAdmin() || isValidStudent(incoming()));
+      allow update: if isValidId(studentId) && (isAdmin() || isValidStudent(incoming()));
+      allow delete: if isValidId(studentId) && (isAdmin() || isSignedIn());
+    }
+
+    // Teachers Collection
+    match /teachers/{teacherId} {
+      allow get, list: if true;
+      allow create: if isValidId(teacherId) && (isAdmin() || isValidTeacher(incoming()));
+      allow update: if isValidId(teacherId) && (isAdmin() || isValidTeacher(incoming()));
+      allow delete: if isValidId(teacherId) && (isAdmin() || isSignedIn());
+    }
+
+    // Classes Collection
+    match /classes/{classId} {
+      allow get, list: if true;
+      allow create: if isValidId(classId) && (isAdmin() || isValidClass(incoming()));
+      allow update: if isValidId(classId) && (isAdmin() || isValidClass(incoming()));
+      allow delete: if isValidId(classId) && (isAdmin() || isSignedIn());
+    }
+
+    // Attendance Records Collection
+    match /attendanceRecords/{recordId} {
+      allow get, list: if true;
+      allow create: if isValidId(recordId) && (isAdmin() || isValidAttendanceRecord(incoming()));
+      allow update: if isValidId(recordId) && (isAdmin() || isValidAttendanceRecord(incoming()));
+      allow delete: if isValidId(recordId) && (isAdmin() || isSignedIn());
+    }
+
+    // Exam Results Collection
+    match /examResults/{resultId} {
+      allow get, list: if true;
+      allow create: if isValidId(resultId) && (isAdmin() || isValidExamResult(incoming()));
+      allow update: if isValidId(resultId) && (isAdmin() || isValidExamResult(incoming()));
+      allow delete: if isValidId(resultId) && (isAdmin() || isSignedIn());
+    }
+  }
+}
