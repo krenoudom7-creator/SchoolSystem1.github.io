@@ -198,3 +198,20 @@ export interface AuditLogItem {
   details: string;
   timestamp: string;
 }
+
+export interface BannerSlide {
+  id: string;
+  badge: string;
+  location?: string;
+  title: string;
+  subtitle: string;
+  imageUrl?: string;
+  gradient: string; // e.g., 'from-blue-950 via-indigo-900 to-blue-900'
+  primaryButtonText?: string;
+  primaryButtonAction?: string; // Tab to navigate to
+  secondaryButtonText?: string;
+  secondaryButtonAction?: string;
+  isActive: boolean;
+  order: number;
+}
+

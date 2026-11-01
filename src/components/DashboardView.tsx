@@ -29,6 +29,8 @@ import {
 import { calculateAttendanceStats, checkAbsenceWarning } from '../utils/calculations.ts';
 import { safeAvatar } from '../utils/avatar.ts';
 import { NavTab } from './Sidebar.tsx';
+import { HeroBannerCarousel } from './HeroBannerCarousel.tsx';
+import { storage } from '../services/storage.ts';
 
 interface DashboardViewProps {
   students: Student[];
@@ -39,6 +41,8 @@ interface DashboardViewProps {
   userRole: UserRole;
   onNavigate: (tab: NavTab) => void;
   onOpenTelegramModal: () => void;
+  onTriggerToast?: (toast: any) => void;
+  onRefresh?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -50,6 +54,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   userRole,
   onNavigate,
   onOpenTelegramModal,
+  onTriggerToast,
+  onRefresh,
 }) => {
   // Today's date filter
   const todayStr = '2026-10-30'; // align with demo seed date
@@ -84,43 +90,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Banner / Welcome header */}
-      <div className="bg-gradient-to-r from-blue-950 via-indigo-900 to-blue-900 rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-radial from-amber-400/10 via-transparent to-transparent pointer-events-none"></div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 text-xs font-semibold bg-amber-400/20 text-amber-300 border border-amber-400/30 rounded-md">
-                អនុវិទ្យាល័យទួលសំបួរ
-              </span>
-              <span className="text-xs text-blue-200">· ឃុំទួលសំបួរ ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold font-moul text-white tracking-wide">
-              ផ្ទាំងគ្រប់គ្រងទូទៅរបស់សាលារៀន
-            </h2>
-            <p className="text-xs sm:text-sm text-blue-100 mt-1">
-              ស្ថិតិសិស្ស គ្រូ វត្តមាន និងការសិក្សាប្រចាំថ្ងៃសុក្រ ទី៣០ ខែតុលា ឆ្នាំ២០២៦
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => onNavigate('attendance')}
-              className="px-4 py-2.5 text-xs font-semibold bg-amber-400 hover:bg-amber-300 text-blue-950 rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <CalendarCheck2 className="w-4 h-4" />
-              <span>កត់ត្រាវត្តមានឥឡូវនេះ</span>
-            </button>
-            <button
-              onClick={() => onNavigate('attendance_reports')}
-              className="px-3.5 py-2.5 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-amber-300" />
-              <span>របាយការណ៍វត្តមាន</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Dynamic Animated Carousel Banner with Customization and RGB Glow */}
+      <HeroBannerCarousel
+        banners={storage.getBanners()}
+        onNavigate={onNavigate}
+        isAdmin={userRole === 'admin' || userRole === 'director'}
+        onBannersChange={() => {
+          if (onRefresh) onRefresh();
+          if (onTriggerToast) {
+            onTriggerToast({
+              title: 'ផ្ទាំង Banner ត្រូវបានកែប្រែ',
+              message: 'ការកំណត់ផ្ទាំងបដាផ្សាយត្រូវបានរក្សាទុកជោគជ័យ!',
+              type: 'success',
+            });
+          }
+        }}
+      />
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

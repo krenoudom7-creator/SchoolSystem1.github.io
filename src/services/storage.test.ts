@@ -119,3 +119,62 @@ test('storage: addSubjectToExam, removeSubjectFromExam, and setExamMaxScore (<= 
   storage.setExamMaxScore(examId, 50);
 });
 
+test('storage: banner carousel operations (get, add, update, delete, reorder)', () => {
+  const initialCount = storage.getAllBanners().length;
+  assert.ok(initialCount >= 3, 'Should have initial default banners');
+
+  // Add new banner
+  const newBanner = storage.addBanner({
+    badge: 'កម្មវិធីថ្មី',
+    location: 'សាលប្រជុំធំ',
+    title: 'ពិធីចែករង្វាន់សិស្សពូកែ',
+    subtitle: 'សូមអបអរសាទរសិស្សឆ្នើមប្រចាំឆ្នាំសិក្សា',
+    imageUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=1200&q=80',
+    primaryButtonText: 'មើលលទ្ធផល',
+    primaryButtonAction: 'grades',
+    isActive: true,
+  });
+
+  assert.ok(newBanner.id, 'New banner should receive an id');
+  assert.strictEqual(storage.getAllBanners().length, initialCount + 1);
+
+  // Update banner
+  const updated = storage.updateBanner(newBanner.id, {
+    title: 'ពិធីចែករង្វាន់សិស្សពូកែទូទាំងខេត្ត',
+    badge: 'កម្មវិធីពិសេស',
+  });
+  assert.strictEqual(updated, true);
+
+  const found = storage.getAllBanners().find((b) => b.id === newBanner.id);
+  assert.strictEqual(found?.title, 'ពិធីចែករង្វាន់សិស្សពូកែទូទាំងខេត្ត');
+  assert.strictEqual(found?.badge, 'កម្មវិធីពិសេស');
+
+  // Delete banner
+  const deleted = storage.deleteBanner(newBanner.id);
+  assert.strictEqual(deleted, true);
+  assert.strictEqual(storage.getAllBanners().length, initialCount);
+});
+
+test('storage: notifications operations (addNotification, markAllNotificationsAsRead, clearNotifications)', () => {
+  const notif = storage.addNotification({
+    studentId: 'st-01',
+    studentName: 'សេង វិបុល',
+    recipientName: 'សេង ចិន្តា (ឳពុក)',
+    recipientPhone: '012 345 678',
+    type: 'attendance_warning',
+    title: 'ការដាស់តឿនវត្តមាន',
+    message: 'សិស្សបានអវត្តមានដោយគ្មានច្បាប់ ២ លើក',
+    status: 'sent',
+  });
+
+  assert.ok(notif.id);
+  const notifications = storage.getNotifications();
+  const added = notifications.find((n) => n.id === notif.id);
+  assert.ok(added);
+
+  storage.markAllNotificationsAsRead();
+  const unread = storage.getNotifications().filter((n) => n.status === 'sent');
+  assert.strictEqual(unread.length, 0);
+});
+
+

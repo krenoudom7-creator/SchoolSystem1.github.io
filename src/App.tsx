@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { storage } from './services/storage.ts';
 import { User, Student, Teacher, SchoolClass, Subject, AttendanceRecord, Exam, ExamResult, AcademicYear, NotificationItem, AuditLogItem } from './types/index.ts';
 import { Header } from './components/Header.tsx';
@@ -19,6 +19,7 @@ import { UsersManagementView } from './components/UsersManagementView.tsx';
 import { LoginModal } from './components/LoginModal.tsx';
 import { LoginScreen } from './components/LoginScreen.tsx';
 import { PrintReportModal } from './components/PrintReportModal.tsx';
+import { BellNotificationToast, ToastData } from './components/BellNotificationToast.tsx';
 import { checkAbsenceWarning } from './utils/calculations.ts';
 import { SCHOOL_LOGO_URL } from './utils/schoolLogo.ts';
 import { Menu, X, LayoutDashboard, CalendarCheck2, GraduationCap, FileText, MoreHorizontal } from 'lucide-react';
@@ -29,6 +30,20 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => storage.getCurrentSession());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  // Floating Bell Notification Toast state
+  const [activeToast, setActiveToast] = useState<ToastData | null>(null);
+
+  const handleCloseToast = useCallback(() => {
+    setActiveToast(null);
+  }, []);
+
+  const handleTriggerToast = useCallback((toast: ToastData) => {
+    setActiveToast({
+      id: `toast-${Date.now()}`,
+      ...toast,
+    });
+  }, []);
 
   // Print modal state
   const [printModalInfo, setPrintModalInfo] = useState<{
@@ -48,6 +63,33 @@ export default function App() {
     });
     return unsubscribe;
   }, []);
+
+  // Initial welcome bell chime notification for demo / active alert awareness
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const unreadAlert = dbState.notifications.find((n) => n.status === 'sent');
+      if (unreadAlert) {
+        handleTriggerToast({
+          title: unreadAlert.title,
+          message: unreadAlert.message,
+          type: 'warning',
+          actionLabel: 'ពិនិត្យមើលវត្តមាន',
+          actionTab: 'attendance',
+          duration: 6500,
+        });
+      } else {
+        handleTriggerToast({
+          title: '🔔 ប្រព័ន្ធគ្រប់គ្រងសាលារៀនដំណើរការ',
+          message: 'សូមស្វាគមន៍មកកាន់ អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ! ប្រព័ន្ធទិន្នន័យដំណើរការធម្មតា។',
+          type: 'info',
+          actionLabel: 'មើលរបាយការណ៍',
+          actionTab: 'attendance_reports',
+          duration: 5500,
+        });
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [handleTriggerToast]);
 
   const handleRefresh = () => {
     setDbState({ ...storage.getDatabase() });
@@ -88,20 +130,23 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-khmer text-slate-800 antialiased">
-      {/* Top Navigation Bar */}
-      <Header
-        currentUser={currentUser}
-        onSwitchUser={(user) => {
-          storage.setSession(user);
-          setCurrentUser(user);
-        }}
-        allUsers={dbState.users}
-        notifications={dbState.notifications}
-        onOpenNotifications={() => setCurrentTab('telegram')}
-        onOpenTelegramModal={() => setCurrentTab('telegram')}
-        onOpenLoginModal={() => setIsLoginModalOpen(true)}
-        onLogout={handleLogout}
-      />
+      {/* App Shell Wrapper (Hidden completely when printing report) */}
+      <div className="app-shell flex-1 flex flex-col">
+        {/* Top Navigation Bar */}
+        <Header
+          currentUser={currentUser}
+          onSwitchUser={(user) => {
+            storage.setSession(user);
+            setCurrentUser(user);
+          }}
+          allUsers={dbState.users}
+          notifications={dbState.notifications}
+          onOpenNotifications={() => setCurrentTab('telegram')}
+          onOpenTelegramModal={() => setCurrentTab('telegram')}
+          onOpenLoginModal={() => setIsLoginModalOpen(true)}
+          onLogout={handleLogout}
+          onTriggerToast={handleTriggerToast}
+        />
 
       {/* Mobile Menu Bar Toggle */}
       <div className="md:hidden bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between no-print">
@@ -165,6 +210,8 @@ export default function App() {
               userRole={currentUser.role}
               onNavigate={(tab) => setCurrentTab(tab)}
               onOpenTelegramModal={() => setCurrentTab('telegram')}
+              onTriggerToast={(toast) => setActiveToast(toast)}
+              onRefresh={handleRefresh}
             />
           )}
 
@@ -337,6 +384,14 @@ export default function App() {
           <span>ម៉ឺនុយ</span>
         </button>
       </nav>
+      </div>
+
+      {/* Floating Bell Notification Toast with RGB Glow */}
+      <BellNotificationToast
+        toast={activeToast}
+        onClose={handleCloseToast}
+        onNavigate={(tab) => setCurrentTab(tab as NavTab)}
+      />
 
       {/* Official A4 Print Modal */}
       <PrintReportModal

@@ -24,6 +24,18 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  // Manage print state on body so only the official document prints
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-print-active');
+    } else {
+      document.body.classList.remove('modal-print-active');
+    }
+    return () => {
+      document.body.classList.remove('modal-print-active');
+    };
+  }, [isOpen]);
+
   if (!isOpen || !data) return null;
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -34,8 +46,14 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 overflow-y-auto print:p-0 print:bg-white print:static">
-      <div className="bg-white rounded-2xl max-w-4xl w-full p-8 shadow-2xl my-8 print:shadow-none print:p-0 print:my-0 print:max-w-none">
+    <div
+      id="official-print-modal-overlay"
+      className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 overflow-y-auto print:p-0 print:bg-white print:static"
+    >
+      <div
+        id="official-print-modal-card"
+        className="bg-white rounded-2xl max-w-4xl w-full p-8 shadow-2xl my-8 print:shadow-none print:p-0 print:my-0 print:max-w-none"
+      >
         {/* Controls: hidden during print */}
         <div className="no-print flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
           <div className="flex items-center gap-2">
@@ -62,7 +80,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
         </div>
 
         {/* Printable Official Document Body (Formatted like MoEYS official papers) */}
-        <div className="print-sheet font-khmer text-slate-900 text-sm leading-relaxed max-w-3xl mx-auto">
+        <div id="official-print-sheet" className="print-sheet font-khmer text-slate-900 text-sm leading-relaxed max-w-3xl mx-auto">
           {/* Header MoEYS with Official School Logo */}
           <div className="flex items-center justify-between text-center pb-4">
             <div className="text-left space-y-0.5">

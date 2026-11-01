@@ -13,6 +13,7 @@ import {
   NotificationItem,
   AuditLogItem,
   AttendanceStatus,
+  BannerSlide,
 } from '../types/index.ts';
 import {
   startFirestoreSync,
@@ -44,6 +45,7 @@ export interface SchoolDatabase {
   academicYears: AcademicYear[];
   notifications: NotificationItem[];
   auditLogs: AuditLogItem[];
+  banners: BannerSlide[];
   telegramSettings: {
     botToken: string;
     chatId: string;
@@ -169,7 +171,30 @@ const INITIAL_EXAMS: Exam[] = [
 
 const INITIAL_EXAM_RESULTS: ExamResult[] = [];
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [];
+const INITIAL_NOTIFICATIONS: NotificationItem[] = [
+  {
+    id: 'notif-1',
+    type: 'system',
+    recipientName: 'លោក ស៊ុយ បូរ៉ា (Admin)',
+    recipientPhone: '012 888 999',
+    studentName: 'ទូទៅ',
+    title: 'ស្វាគមន៍មកកាន់ប្រព័ន្ធគ្រប់គ្រងសាលា',
+    message: 'ប្រព័ន្ធគ្រប់គ្រងសាលារៀន អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ ដំណើរការប្រក្រតី ២៤/៧។',
+    status: 'sent',
+    sentAt: '2026-10-31T08:00:00Z',
+  },
+  {
+    id: 'notif-2',
+    type: 'telegram',
+    recipientName: 'លោកគ្រូ-អ្នកគ្រូទាំងអស់',
+    recipientPhone: 'Bot Channel',
+    studentName: 'ទូទៅ',
+    title: 'កាលបរិច្ឆេទប្រឡងឆមាសទី ១',
+    message: 'សូមលោកគ្រូ-អ្នកគ្រូរៀបចំបញ្ចូលពិន្ទុ និងវត្តមានសិស្សឱ្យបានទាន់ពេលវេលា។',
+    status: 'sent',
+    sentAt: '2026-10-30T10:30:00Z',
+  },
+];
 
 const INITIAL_AUDIT_LOGS: AuditLogItem[] = [
   {
@@ -179,6 +204,54 @@ const INITIAL_AUDIT_LOGS: AuditLogItem[] = [
     action: 'ចាប់ផ្ដើមប្រព័ន្ធ',
     details: 'ប្រព័ន្ធគ្រប់គ្រងសាលាត្រូវបានកំណត់ឡើងវិញ ត្រៀមទទួលការបញ្ចូលទិន្នន័យជាក់ស្ដែង',
     timestamp: '2026-10-31T08:00:00Z',
+  },
+];
+
+const INITIAL_BANNERS: BannerSlide[] = [
+  {
+    id: 'banner-1',
+    badge: 'អនុវិទ្យាល័យទួលសំបួរ',
+    location: 'ឃុំទួលសំបួរ ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម',
+    title: 'ផ្ទាំងគ្រប់គ្រងទូទៅរបស់សាលារៀន',
+    subtitle: 'ប្រព័ន្ធគ្រប់គ្រងទិន្នន័យអប់រំ វត្តមានសិស្ស និងលទ្ធផលប្រឡងឌីជីថល ឆ្នាំសិក្សា ២០២៥-២០២៦',
+    imageUrl: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1200&auto=format&fit=crop&q=80',
+    gradient: 'from-blue-950 via-indigo-950 to-slate-900',
+    primaryButtonText: 'កត់ត្រាវត្តមានឥឡូវនេះ',
+    primaryButtonAction: 'attendance',
+    secondaryButtonText: 'របាយការណ៍វត្តមាន',
+    secondaryButtonAction: 'attendance_reports',
+    isActive: true,
+    order: 1,
+  },
+  {
+    id: 'banner-2',
+    badge: 'ការប្រឡង & ពិន្ទុសិស្ស',
+    location: 'បន្ទប់ប្រឡង និងការិយាល័យសិក្សា',
+    title: 'បញ្ចូលពិន្ទុ និងចំណាត់ថ្នាក់សិស្សឆមាស',
+    subtitle: 'ប្រព័ន្ធគណនាពិន្ទុ មធ្យមភាគ និងចំណាត់ថ្នាក់សិស្សដោយស្វ័យប្រវត្តិតាមស្ដង់ដារក្រសួងអប់រំ',
+    imageUrl: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=1200&auto=format&fit=crop&q=80',
+    gradient: 'from-purple-950 via-indigo-950 to-blue-950',
+    primaryButtonText: 'បញ្ចូលពិន្ទុប្រឡង',
+    primaryButtonAction: 'exams',
+    secondaryButtonText: 'កាលវិភាគសិក្សា',
+    secondaryButtonAction: 'timetable',
+    isActive: true,
+    order: 2,
+  },
+  {
+    id: 'banner-3',
+    badge: 'Telegram Bot & ជូនដំណឹង',
+    location: 'ប្រព័ន្ធស្វ័យប្រវត្តិកម្ម ២៤/៧',
+    title: 'ភ្ជាប់ទំនាក់ទំនងជាមួយអាណាព្យាបាលសិស្ស',
+    subtitle: 'ផ្ញើសារជូនដំណឹងអវត្តមានសិស្ស និងដំណឹងបន្ទាន់សាលារៀនទៅកាន់ Telegram ភ្លាមៗ',
+    imageUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&auto=format&fit=crop&q=80',
+    gradient: 'from-slate-950 via-blue-950 to-emerald-950',
+    primaryButtonText: 'ផ្ញើសារជូនដំណឹង',
+    primaryButtonAction: 'telegram',
+    secondaryButtonText: 'បញ្ជីឈ្មោះសិស្ស',
+    secondaryButtonAction: 'students',
+    isActive: true,
+    order: 3,
   },
 ];
 
@@ -269,6 +342,7 @@ class StorageService {
               status: u.status || 'active',
             }));
           }
+          parsed.banners = parsed.banners && parsed.banners.length > 0 ? parsed.banners : INITIAL_BANNERS;
           return parsed;
         }
       }
@@ -291,6 +365,7 @@ class StorageService {
       academicYears: INITIAL_ACADEMIC_YEARS,
       notifications: INITIAL_NOTIFICATIONS,
       auditLogs: INITIAL_AUDIT_LOGS,
+      banners: INITIAL_BANNERS,
       telegramSettings: {
         botToken: '6744553829:AAFtG_SchoolToulsambourBot_Simulated',
         chatId: '-10023456789',
@@ -885,9 +960,95 @@ class StorageService {
     return newAy;
   }
 
-  // Notifications
+  // Notifications & Bell Alerts
   public getNotifications(): NotificationItem[] {
     return this.db.notifications;
+  }
+
+  public addNotification(
+    data: Omit<NotificationItem, 'id' | 'sentAt'>,
+    actorName = 'System'
+  ): NotificationItem {
+    const newNotif: NotificationItem = {
+      ...data,
+      id: `notif-${Date.now()}`,
+      sentAt: new Date().toISOString(),
+    };
+    if (!this.db.notifications) this.db.notifications = [];
+    this.db.notifications.unshift(newNotif);
+    this.logAudit(actorName, 'system', 'បង្កើតសារជូនដំណឹង', `សារជូនដំណឹងថ្មី៖ ${newNotif.title}`);
+    this.saveDatabase(this.db);
+    return newNotif;
+  }
+
+  public markAllNotificationsAsRead(): void {
+    if (!this.db.notifications) return;
+    this.db.notifications = this.db.notifications.map((n) => ({
+      ...n,
+      status: 'read',
+    }));
+    this.saveDatabase(this.db);
+  }
+
+  public clearNotifications(): void {
+    this.db.notifications = [];
+    this.saveDatabase(this.db);
+  }
+
+  // Dynamic & Customizable Auto-Rotating Banners
+  public getBanners(): BannerSlide[] {
+    if (!this.db.banners || this.db.banners.length === 0) {
+      this.db.banners = INITIAL_BANNERS;
+      this.saveDatabase(this.db);
+    }
+    return this.db.banners.filter((b) => b.isActive).sort((a, b) => a.order - b.order);
+  }
+
+  public getAllBanners(): BannerSlide[] {
+    if (!this.db.banners || this.db.banners.length === 0) {
+      this.db.banners = INITIAL_BANNERS;
+      this.saveDatabase(this.db);
+    }
+    return this.db.banners.sort((a, b) => a.order - b.order);
+  }
+
+  public saveBanners(banners: BannerSlide[], actorName = 'Admin'): void {
+    this.db.banners = banners;
+    this.logAudit(actorName, 'admin', 'កែសម្រួលផ្ទាំង Banner', `បានកែសម្រួលផ្ទាំង Banner វិល`);
+    this.saveDatabase(this.db);
+  }
+
+  public addBanner(slideData: Omit<BannerSlide, 'id'>, actorName = 'Admin'): BannerSlide {
+    if (!this.db.banners) this.db.banners = [];
+    const newSlide: BannerSlide = {
+      order: this.db.banners.length + 1,
+      ...slideData,
+      id: `banner-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    };
+    this.db.banners.push(newSlide);
+    this.logAudit(actorName, 'admin', 'បន្ថែមផ្ទាំង Banner ថ្មី', `បន្ថែមផ្ទាំង Banner៖ ${newSlide.title}`);
+    this.saveDatabase(this.db);
+    return newSlide;
+  }
+
+  public updateBanner(id: string, updates: Partial<BannerSlide>, actorName = 'Admin'): boolean {
+    if (!this.db.banners) return false;
+    const index = this.db.banners.findIndex((b) => b.id === id);
+    if (index === -1) return false;
+    this.db.banners[index] = { ...this.db.banners[index], ...updates };
+    this.logAudit(actorName, 'admin', 'កែប្រែផ្ទាំង Banner', `កែប្រែផ្ទាំង Banner៖ ${this.db.banners[index].title}`);
+    this.saveDatabase(this.db);
+    return true;
+  }
+
+  public deleteBanner(id: string, actorName = 'Admin'): boolean {
+    if (!this.db.banners) return false;
+    const banner = this.db.banners.find((b) => b.id === id);
+    if (!banner) return false;
+    this.db.banners = this.db.banners.filter((b) => b.id !== id);
+    this.logAudit(actorName, 'admin', 'លុបផ្ទាំង Banner', `លុបផ្ទាំង Banner៖ ${banner.title}`);
+    this.saveDatabase(this.db);
+    return true;
   }
 
   // Users
