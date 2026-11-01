@@ -112,14 +112,14 @@ export const TelegramNotificationView: React.FC<TelegramNotificationViewProps> =
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
             <span className="text-[10px] text-slate-400 font-semibold uppercase">ឈ្មោះ Bot</span>
             <div className="text-xs font-mono font-bold text-blue-950 mt-0.5">
-              @ToulsambourSchoolAlert_bot
+             @machin_caffee_bot
             </div>
           </div>
 
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
             <span className="text-[10px] text-slate-400 font-semibold uppercase">Bot Token API</span>
             <div className="text-xs font-mono text-slate-600 truncate mt-0.5">
-              6744553829:AAFtG_SchoolToulsambourBot_Simulated
+          8854828129:AAHp_oHUOkQ1u9vJiT8tFU8HtSygyaZHWyU
             </div>
           </div>
 
