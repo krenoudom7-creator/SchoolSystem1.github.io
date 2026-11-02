@@ -47,6 +47,7 @@ export interface SchoolDatabase {
   auditLogs: AuditLogItem[];
   banners: BannerSlide[];
   telegramSettings: {
+    botUsername: string;
     botToken: string;
     chatId: string;
     isEnabled: boolean;
@@ -343,6 +344,14 @@ class StorageService {
             }));
           }
           parsed.banners = parsed.banners && parsed.banners.length > 0 ? parsed.banners : INITIAL_BANNERS;
+          if (!parsed.telegramSettings || parsed.telegramSettings.botToken?.includes('Simulated') || !parsed.telegramSettings.botUsername) {
+            parsed.telegramSettings = {
+              botUsername: '@machin_caffee_bot',
+              botToken: '8854828129:AAHp_oHUOkQ1u9vJiT8tFU8HtSygyaZHWyU',
+              chatId: parsed.telegramSettings?.chatId || '',
+              isEnabled: true,
+            };
+          }
           return parsed;
         }
       }
@@ -367,8 +376,9 @@ class StorageService {
       auditLogs: INITIAL_AUDIT_LOGS,
       banners: INITIAL_BANNERS,
       telegramSettings: {
-        botToken: '6744553829:AAFtG_SchoolToulsambourBot_Simulated',
-        chatId: '-10023456789',
+        botUsername: '@machin_caffee_bot',
+        botToken: '8854828129:AAHp_oHUOkQ1u9vJiT8tFU8HtSygyaZHWyU',
+        chatId: '',
         isEnabled: true,
       },
     };
@@ -993,6 +1003,35 @@ class StorageService {
   public clearNotifications(): void {
     this.db.notifications = [];
     this.saveDatabase(this.db);
+  }
+
+  // Telegram Bot Settings Management
+  public getTelegramSettings() {
+    if (!this.db.telegramSettings || this.db.telegramSettings.botToken?.includes('Simulated') || !this.db.telegramSettings.botUsername) {
+      this.db.telegramSettings = {
+        botUsername: '@machin_caffee_bot',
+        botToken: '8854828129:AAHp_oHUOkQ1u9vJiT8tFU8HtSygyaZHWyU',
+        chatId: this.db.telegramSettings?.chatId || '',
+        isEnabled: true,
+      };
+      this.saveDatabase(this.db);
+    }
+    return this.db.telegramSettings;
+  }
+
+  public updateTelegramSettings(settings: Partial<SchoolDatabase['telegramSettings']>, actorName = 'Admin'): boolean {
+    this.db.telegramSettings = {
+      ...this.getTelegramSettings(),
+      ...settings,
+    };
+    this.logAudit(
+      actorName,
+      'admin',
+      'កែប្រែការកំណត់ Telegram Bot',
+      `បានកែប្រែ Bot: ${this.db.telegramSettings.botUsername || ''} (Token: ${this.db.telegramSettings.botToken ? 'កំណត់រួច' : 'ទទេ'})`
+    );
+    this.saveDatabase(this.db);
+    return true;
   }
 
   // Dynamic & Customizable Auto-Rotating Banners

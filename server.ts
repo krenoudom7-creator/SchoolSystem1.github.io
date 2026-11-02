@@ -341,18 +341,70 @@ async function startServer() {
     });
   });
 
+  const DEFAULT_BOT_TOKEN = '8854828129:AAHp_oHUOkQ1u9vJiT8tFU8HtSygyaZHWyU';
+  const DEFAULT_BOT_USERNAME = '@machin_caffee_bot';
+
+  // 1. Verify Telegram Bot Connection (getMe)
+  app.post('/api/telegram/getMe', async (req, res) => {
+    const token = req.body.botToken || DEFAULT_BOT_TOKEN;
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+      const data = await response.json();
+      res.json(data);
+    } catch (err: any) {
+      console.error('Telegram getMe error:', err);
+      res.status(500).json({ ok: false, error: err.message || 'Failed to connect to Telegram API' });
+    }
+  });
+
+  // 2. Fetch Latest Chat IDs / Updates from Telegram users (getUpdates)
+  app.post('/api/telegram/getUpdates', async (req, res) => {
+    const token = req.body.botToken || DEFAULT_BOT_TOKEN;
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=-10`);
+      const data = await response.json();
+      if (data.ok && Array.isArray(data.result)) {
+        // Extract unique chats from recent messages
+        const chatsMap = new Map();
+        for (const item of data.result) {
+          const chat = item.message?.chat || item.channel_post?.chat || item.my_chat_member?.chat;
+          if (chat && chat.id) {
+            chatsMap.set(String(chat.id), {
+              id: String(chat.id),
+              title: chat.title || `${chat.first_name || ''} ${chat.last_name || ''}`.trim() || chat.username || 'Chat',
+              type: chat.type,
+              username: chat.username,
+            });
+          }
+        }
+        return res.json({
+          ok: true,
+          chats: Array.from(chatsMap.values()),
+          rawCount: data.result.length,
+        });
+      }
+      res.json(data);
+    } catch (err: any) {
+      console.error('Telegram getUpdates error:', err);
+      res.status(500).json({ ok: false, error: err.message || 'Failed to fetch updates' });
+    }
+  });
+
+  // 3. Send Telegram Message
   app.post('/api/telegram/send', async (req, res) => {
     const { botToken, chatId, message } = req.body;
-    if (!chatId || !message) {
-      return res.status(400).json({ error: 'chatId and message are required' });
+    if (!message) {
+      return res.status(400).json({ ok: false, error: 'Message content is required' });
     }
 
-    const token = botToken || process.env.TELEGRAM_BOT_TOKEN;
-    if (!token || token.includes('Simulated')) {
+    const token = botToken || DEFAULT_BOT_TOKEN;
+
+    // If no chatId provided, we record to local DB and notify user to start the bot
+    if (!chatId) {
       return res.json({
         ok: true,
         simulated: true,
-        message: 'បានកត់ត្រាការជូនដំណឹង Telegram ដោយជោគជ័យ (Simulated)',
+        message: 'បានកត់ត្រាសារក្នុងប្រព័ន្ធ (សូមភ្ជាប់ Chat ID ឬ Start Bot @machin_caffee_bot ដើម្បីបញ្ជូនចូល Telegram ផ្ទាល់)',
         sentAt: new Date().toISOString(),
       });
     }
@@ -371,7 +423,7 @@ async function startServer() {
       res.json(data);
     } catch (err: any) {
       console.error('Telegram dispatch error:', err);
-      res.status(500).json({ error: err.message || 'Telegram dispatch failed' });
+      res.status(500).json({ ok: false, error: err.message || 'Telegram dispatch failed' });
     }
   });
 

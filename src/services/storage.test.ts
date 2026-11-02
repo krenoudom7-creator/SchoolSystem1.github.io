@@ -177,4 +177,16 @@ test('storage: notifications operations (addNotification, markAllNotificationsAs
   assert.strictEqual(unread.length, 0);
 });
 
+test('storage: telegram settings operations (getTelegramSettings, updateTelegramSettings)', () => {
+  const settings = storage.getTelegramSettings();
+  assert.strictEqual(settings.botUsername, '@machin_caffee_bot');
+  assert.strictEqual(settings.botToken, '8854828129:AAHp_oHUOkQ1u9vJiT8tFU8HtSygyaZHWyU');
+
+  storage.updateTelegramSettings({
+    chatId: '-100987654321',
+  });
+  assert.strictEqual(storage.getTelegramSettings().chatId, '-100987654321');
+});
+
+
 
