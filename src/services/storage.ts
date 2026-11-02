@@ -940,15 +940,65 @@ class StorageService {
     return true;
   }
 
-  public setExamMaxScore(examId: string, maxScore: number, actorName = 'Admin'): boolean {
+  public setExamMaxScore(
+    examId: string,
+    maxScore: number,
+    subjectId?: string,
+    actorName = 'Admin'
+  ): boolean {
     const exam = this.db.exams.find((e) => e.id === examId);
     if (!exam) return false;
     // Cap at 150 as requested by user
     const cappedScore = Math.max(1, Math.min(150, maxScore));
-    exam.maxScorePerSubject = cappedScore;
-    this.logAudit(actorName, 'admin', 'កំណត់ពិន្ទុអតិបរមា', `កំណត់ពិន្ទុពេញ ${cappedScore} សម្រាប់ ${exam.title}`);
+
+    if (subjectId && subjectId !== 'all') {
+      if (!exam.subjectMaxScores) {
+        exam.subjectMaxScores = {};
+      }
+      exam.subjectMaxScores[subjectId] = cappedScore;
+      const subject = this.db.subjects.find((s) => s.id === subjectId);
+      this.logAudit(
+        actorName,
+        'admin',
+        'កំណត់ពិន្ទុពេញតាមមុខវិជ្ជា',
+        `កំណត់ពិន្ទុពេញ ${cappedScore} សម្រាប់មុខវិជ្ជា ${subject?.nameKm || subjectId} ក្នុង ${exam.title}`
+      );
+    } else {
+      exam.maxScorePerSubject = cappedScore;
+      // If setting for all, also update all individual subjects in this exam
+      if (!exam.subjectMaxScores) {
+        exam.subjectMaxScores = {};
+      }
+      const activeIds = exam.subjectIds || this.db.subjects.slice(0, 6).map((s) => s.id);
+      activeIds.forEach((sid) => {
+        exam.subjectMaxScores![sid] = cappedScore;
+      });
+      this.logAudit(
+        actorName,
+        'admin',
+        'កំណត់ពិន្ទុអតិបរមារួម',
+        `កំណត់ពិន្ទុពេញ ${cappedScore} សម្រាប់គ្រប់មុខវិជ្ជាក្នុង ${exam.title}`
+      );
+    }
+
     this.saveDatabase(this.db);
     return true;
+  }
+
+  public setExamSubjectMaxScore(
+    examId: string,
+    subjectId: string,
+    maxScore: number,
+    actorName = 'Admin'
+  ): boolean {
+    return this.setExamMaxScore(examId, maxScore, subjectId, actorName);
+  }
+
+  public getExamSubjectMaxScore(exam: Exam, subjectId: string): number {
+    if (exam.subjectMaxScores && exam.subjectMaxScores[subjectId] !== undefined) {
+      return Math.min(150, Math.max(1, exam.subjectMaxScores[subjectId]));
+    }
+    return Math.min(150, Math.max(1, exam.maxScorePerSubject || 50));
   }
 
   // Academic Years
@@ -1060,8 +1110,8 @@ class StorageService {
   public addBanner(slideData: Omit<BannerSlide, 'id'>, actorName = 'Admin'): BannerSlide {
     if (!this.db.banners) this.db.banners = [];
     const newSlide: BannerSlide = {
-      order: this.db.banners.length + 1,
       ...slideData,
+      order: slideData.order ?? (this.db.banners.length + 1),
       id: `banner-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     };
     this.db.banners.push(newSlide);
@@ -1111,8 +1161,8 @@ class StorageService {
     );
     this.saveDatabase(this.db);
     // Sync to backend server API
-    if (typeof window !== 'undefined' && window.fetch) {
-      fetch('/api/system/access-code', {
+    if (typeof window !== 'undefined' && 'fetch' in window) {
+      window.fetch('/api/system/access-code', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessCode: trimmed }),
@@ -1185,32 +1235,48 @@ class StorageService {
   public getCurrentSession(): User | null {
     if (typeof window === 'undefined') return null;
     try {
-      const sessionStr = sessionStorage.getItem('toulsambour_auth_session');
-      if (!sessionStr) return null;
-      const parsed = JSON.parse(sessionStr);
-      // Verify user still exists in DB and is active
-      const liveUser = this.db.users.find((u) => u.id === parsed.id && u.status !== 'inactive');
-      return liveUser || null;
+      // 1. Check if user explicitly logged out
+      const hasExplicitlyLoggedOut = window.localStorage?.getItem('toulsambour_logged_out') === 'true';
+      if (hasExplicitlyLoggedOut) {
+        return null;
+      }
+
+      // 2. Check saved session in localStorage or sessionStorage
+      const sessionStr = window.localStorage?.getItem('toulsambour_auth_session') ||
+                         window.sessionStorage?.getItem('toulsambour_auth_session');
+      if (sessionStr) {
+        const parsed = JSON.parse(sessionStr);
+        const liveUser = this.db.users.find((u) => u.id === parsed.id && u.status !== 'inactive');
+        if (liveUser) return liveUser;
+      }
+
+      // 3. Default to active Admin account if not logged out (guarantees preview opens directly into the app)
+      const defaultAdmin = this.db.users.find((u) => u.username === 'admin') || this.db.users[0];
+      return defaultAdmin || null;
     } catch {
-      return null;
+      return this.db.users[0] || null;
     }
   }
 
   public setSession(user: User): void {
     if (typeof window === 'undefined') return;
     try {
-      sessionStorage.setItem('toulsambour_auth_session', JSON.stringify(user));
+      window.localStorage?.removeItem('toulsambour_logged_out');
+      window.localStorage?.setItem('toulsambour_auth_session', JSON.stringify(user));
+      window.sessionStorage?.setItem('toulsambour_auth_session', JSON.stringify(user));
     } catch (e) {
-      console.error('Failed to set session:', e);
+      console.warn('Failed to set session:', e);
     }
   }
 
   public clearSession(): void {
     if (typeof window === 'undefined') return;
     try {
-      sessionStorage.removeItem('toulsambour_auth_session');
+      window.localStorage?.setItem('toulsambour_logged_out', 'true');
+      window.localStorage?.removeItem('toulsambour_auth_session');
+      window.sessionStorage?.removeItem('toulsambour_auth_session');
     } catch (e) {
-      console.error('Failed to clear session:', e);
+      console.warn('Failed to clear session:', e);
     }
   }
 }

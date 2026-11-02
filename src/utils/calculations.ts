@@ -101,7 +101,7 @@ export function calculateRankings(
     studentName?: string;
     scores: Record<string, number>;
   }>,
-  maxScorePerSubject: number = 50
+  maxScorePerSubject: number | Record<string, number> = 50
 ): Array<{
   studentId: string;
   studentName?: string;
@@ -113,11 +113,36 @@ export function calculateRankings(
   remarks: string;
 }> {
   const processed = records.map((item) => {
-    const scoreValues = Object.values(item.scores);
-    const count = scoreValues.length > 0 ? scoreValues.length : 1;
-    const totalScore = Number(scoreValues.reduce((acc, curr) => acc + (Number(curr) || 0), 0).toFixed(2));
+    const scoreEntries = Object.entries(item.scores);
+    const count = scoreEntries.length > 0 ? scoreEntries.length : 1;
+    const totalScore = Number(
+      scoreEntries.reduce((acc, [, curr]) => acc + (Number(curr) || 0), 0).toFixed(2)
+    );
     const average = Number((totalScore / count).toFixed(2));
-    const classification = classifyGrade(average, maxScorePerSubject);
+
+    let classification: { labelKm: string; gradeLetter: string; isPassed: boolean };
+
+    if (typeof maxScorePerSubject === 'object' && maxScorePerSubject !== null) {
+      let totalMax = 0;
+      scoreEntries.forEach(([sid]) => {
+        totalMax += maxScorePerSubject[sid] !== undefined ? maxScorePerSubject[sid] : 50;
+      });
+      if (totalMax === 0) totalMax = count * 50;
+      const ratio = totalScore / totalMax;
+      if (ratio >= 0.90) {
+        classification = { labelKm: 'ល្អប្រសើរ (និទ្ទេស A)', gradeLetter: 'A', isPassed: true };
+      } else if (ratio >= 0.80) {
+        classification = { labelKm: 'ល្អណាស់ (និទ្ទេស B)', gradeLetter: 'B', isPassed: true };
+      } else if (ratio >= 0.70) {
+        classification = { labelKm: 'ល្អ (និទ្ទេស C)', gradeLetter: 'C', isPassed: true };
+      } else if (ratio >= 0.50) {
+        classification = { labelKm: 'មធ្យម (និទ្ទេស D)', gradeLetter: 'D', isPassed: true };
+      } else {
+        classification = { labelKm: 'ខ្សោយ (ធ្លាក់)', gradeLetter: 'F', isPassed: false };
+      }
+    } else {
+      classification = classifyGrade(average, maxScorePerSubject);
+    }
 
     return {
       studentId: item.studentId,

@@ -152,6 +152,7 @@ export interface Exam {
   month?: string;
   date: string;
   maxScorePerSubject: number;
+  subjectMaxScores?: Record<string, number>; // Per-subject max score (subjectId -> maxScore <= 150)
   subjectIds?: string[];
 }
 
@@ -186,7 +187,7 @@ export interface NotificationItem {
   studentName: string;
   title: string;
   message: string;
-  status: 'sent' | 'pending' | 'failed';
+  status: 'sent' | 'pending' | 'failed' | 'read';
   sentAt: string;
 }
 

@@ -96,6 +96,13 @@ test('storage: addSubjectToExam, removeSubjectFromExam, and setExamMaxScore (<= 
   storage.setExamMaxScore(examId, 200);
   assert.strictEqual(storage.getExams().find((e) => e.id === examId)?.maxScorePerSubject, 150);
 
+  // Set per-subject individual max score (e.g. math = 100, khmer = 50)
+  storage.setExamSubjectMaxScore(examId, 'sub-math', 100);
+  storage.setExamSubjectMaxScore(examId, 'sub-khmer', 50);
+  const examWithIndividual = storage.getExams().find((e) => e.id === examId)!;
+  assert.strictEqual(storage.getExamSubjectMaxScore(examWithIndividual, 'sub-math'), 100);
+  assert.strictEqual(storage.getExamSubjectMaxScore(examWithIndividual, 'sub-khmer'), 50);
+
   // Add and remove subject to exam
   const testSub = storage.addSubject({
     code: 'EX-SUB-1',
@@ -130,6 +137,8 @@ test('storage: banner carousel operations (get, add, update, delete, reorder)', 
     title: 'ពិធីចែករង្វាន់សិស្សពូកែ',
     subtitle: 'សូមអបអរសាទរសិស្សឆ្នើមប្រចាំឆ្នាំសិក្សា',
     imageUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=1200&q=80',
+    gradient: 'from-blue-900 to-indigo-950',
+    order: 99,
     primaryButtonText: 'មើលលទ្ធផល',
     primaryButtonAction: 'grades',
     isActive: true,
@@ -157,11 +166,10 @@ test('storage: banner carousel operations (get, add, update, delete, reorder)', 
 
 test('storage: notifications operations (addNotification, markAllNotificationsAsRead, clearNotifications)', () => {
   const notif = storage.addNotification({
-    studentId: 'st-01',
     studentName: 'សេង វិបុល',
     recipientName: 'សេង ចិន្តា (ឳពុក)',
     recipientPhone: '012 345 678',
-    type: 'attendance_warning',
+    type: 'telegram',
     title: 'ការដាស់តឿនវត្តមាន',
     message: 'សិស្សបានអវត្តមានដោយគ្មានច្បាប់ ២ លើក',
     status: 'sent',

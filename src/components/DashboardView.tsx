@@ -93,7 +93,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Dynamic Animated Carousel Banner with Customization and RGB Glow */}
       <HeroBannerCarousel
         banners={storage.getBanners()}
-        onNavigate={onNavigate}
+        onNavigate={(tab) => onNavigate(tab as any)}
         isAdmin={userRole === 'admin' || userRole === 'director'}
         onBannersChange={() => {
           if (onRefresh) onRefresh();

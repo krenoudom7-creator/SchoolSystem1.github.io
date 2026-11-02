@@ -61,14 +61,25 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
   // Max score configuration state
   const [isConfiguringMaxScore, setIsConfiguringMaxScore] = useState(false);
   const [maxScoreInput, setMaxScoreInput] = useState<number>(50);
+  const [selectedSubjectForMax, setSelectedSubjectForMax] = useState<string>('');
+  const [isSubjectMaxModalOpen, setIsSubjectMaxModalOpen] = useState(false);
+  const [editingSubjectForMax, setEditingSubjectForMax] = useState<Subject | null>(null);
+  const [singleSubjectMaxInput, setSingleSubjectMaxInput] = useState<number>(50);
+  const [batchSubjectMaxes, setBatchSubjectMaxes] = useState<Record<string, number>>({});
 
   // Active exam and class
   const currentExam = exams.find((e) => e.id === selectedExamId) || exams[0];
   const currentClass = classes.find((c) => c.id === selectedClassId) || classes[0];
   const classStudents = students.filter((s) => s.classId === selectedClassId);
 
-  // Configured max score for the current exam (capped at 150 max)
-  const currentMaxScore = Math.min(
+  // Helper to get max score for an individual subject in current exam
+  const getSubjectMax = (subjectId: string): number => {
+    if (!currentExam) return 50;
+    return storage.getExamSubjectMaxScore(currentExam, subjectId);
+  };
+
+  // Configured default max score for the current exam (capped at 150 max)
+  const fallbackMaxScore = Math.min(
     150,
     Math.max(1, currentExam?.maxScorePerSubject || 50)
   );
@@ -81,6 +92,12 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
   const examSubjects = examSubjectIds
     .map((id) => subjects.find((s) => s.id === id))
     .filter((s): s is Subject => s !== undefined);
+
+  // Total possible max score is sum of each subject's individual max score
+  const totalMaxPossibleScore = examSubjects.reduce(
+    (acc, sbj) => acc + getSubjectMax(sbj.id),
+    0
+  );
 
   // Subjects not yet in this exam (available to add)
   const availableSubjectsToAdd = subjects.filter(
@@ -103,24 +120,76 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
         // Default template scores if none exist
         const defaultScores: Record<string, number> = {};
         examSubjects.forEach((sbj) => {
-          defaultScores[sbj.id] = Math.round(currentMaxScore * 0.7);
+          const sMax = getSubjectMax(sbj.id);
+          defaultScores[sbj.id] = Math.round(sMax * 0.7);
         });
         newMap[student.id] = defaultScores;
       }
     });
     setDraftScores(newMap);
-    setMaxScoreInput(currentMaxScore);
-  }, [selectedExamId, selectedClassId, examResults.length, examSubjectIds.join(',')]);
+
+    // Sync input field value and auto-select first subject by default
+    const activeSubId = selectedSubjectForMax || examSubjects[0]?.id || 'all';
+    if (!selectedSubjectForMax && examSubjects.length > 0) {
+      setSelectedSubjectForMax(examSubjects[0].id);
+    }
+    if (activeSubId === 'all') {
+      setMaxScoreInput(fallbackMaxScore);
+    } else {
+      setMaxScoreInput(getSubjectMax(activeSubId));
+    }
+  }, [selectedExamId, selectedClassId, examResults.length, examSubjectIds.join(','), selectedSubjectForMax]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), 3500);
   };
 
-  // Handle score change with strict validation against currentMaxScore (capped <= 150)
+  // Open modal with all subjects and their current max scores
+  const openBatchSubjectMaxModal = () => {
+    const initialMap: Record<string, number> = {};
+    examSubjects.forEach((s) => {
+      initialMap[s.id] = getSubjectMax(s.id);
+    });
+    setBatchSubjectMaxes(initialMap);
+    setIsSubjectMaxModalOpen(true);
+  };
+
+  const handleSaveBatchSubjectMaxes = () => {
+    Object.entries(batchSubjectMaxes).forEach(([subId, maxVal]) => {
+      const capped = Math.max(1, Math.min(150, maxVal || 50));
+      storage.setExamSubjectMaxScore(selectedExamId, subId, capped);
+    });
+    showToast('បានរក្សាទុកពិន្ទុពេញសម្រាប់មុខវិជ្ជានីមួយៗដោយជោគជ័យ!');
+    setIsSubjectMaxModalOpen(false);
+    if (selectedSubjectForMax && selectedSubjectForMax !== 'all') {
+      setMaxScoreInput(batchSubjectMaxes[selectedSubjectForMax] || 50);
+    }
+    onRefresh();
+  };
+
+  const handleOpenSingleSubjectModal = (sub: Subject) => {
+    setEditingSubjectForMax(sub);
+    setSingleSubjectMaxInput(getSubjectMax(sub.id));
+  };
+
+  const handleSaveSingleSubjectModal = (subjectId: string, val: number) => {
+    const capped = Math.max(1, Math.min(150, val));
+    storage.setExamSubjectMaxScore(selectedExamId, subjectId, capped);
+    const sub = subjects.find((s) => s.id === subjectId);
+    showToast(`បានកំណត់ពិន្ទុពេញ ${capped} សម្រាប់មុខវិជ្ជា «${sub?.nameKm || subjectId}» ដោយជោគជ័យ!`);
+    setEditingSubjectForMax(null);
+    if (selectedSubjectForMax === subjectId) {
+      setMaxScoreInput(capped);
+    }
+    onRefresh();
+  };
+
+  // Handle score change with strict validation against each subject's specific max score (capped <= 150)
   const handleScoreChange = (studentId: string, subjectId: string, value: number) => {
     const num = isNaN(value) ? 0 : value;
-    const valid = Math.max(0, Math.min(currentMaxScore, Math.min(150, num)));
+    const maxAllowed = getSubjectMax(subjectId);
+    const valid = Math.max(0, Math.min(maxAllowed, Math.min(150, num)));
     setDraftScores((prev) => ({
       ...prev,
       [studentId]: {
@@ -130,13 +199,19 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
     }));
   };
 
-  // Pre-set max score change handler (ensures <= 150)
-  const handleSaveMaxScore = (val: number) => {
+  // Pre-set max score change handler (supports individual subject or all subjects, capped <= 150)
+  const handleSaveMaxScore = (val: number, targetSubjectId: string = selectedSubjectForMax) => {
     const capped = Math.max(1, Math.min(150, val));
-    storage.setExamMaxScore(selectedExamId, capped);
+    if (targetSubjectId && targetSubjectId !== 'all') {
+      storage.setExamSubjectMaxScore(selectedExamId, targetSubjectId, capped);
+      const sub = subjects.find((s) => s.id === targetSubjectId);
+      showToast(`បានកំណត់ពិន្ទុពេញ ${capped} សម្រាប់មុខវិជ្ជា «${sub?.nameKm || targetSubjectId}» ដោយជោគជ័យ!`);
+    } else {
+      storage.setExamMaxScore(selectedExamId, capped, 'all');
+      showToast(`បានកំណត់ពិន្ទុពេញ ${capped} សម្រាប់គ្រប់មុខវិជ្ជាទាំងអស់ដោយជោគជ័យ!`);
+    }
     setMaxScoreInput(capped);
     setIsConfiguringMaxScore(false);
-    showToast(`បានកំណត់ពិន្ទុអតិបរមា ${capped} ពិន្ទុ (ត្រឹម ១៥០) ដោយជោគជ័យ!`);
     onRefresh();
   };
 
@@ -148,7 +223,13 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
       scores: draftScores[s.id] || {},
     }));
 
-    const calculated = calculateRankings(rawData, currentMaxScore).map((item) => ({
+    // Create a subjectId -> maxScore map for precise weighted calculation
+    const subjectMaxMap: Record<string, number> = {};
+    examSubjects.forEach((s) => {
+      subjectMaxMap[s.id] = getSubjectMax(s.id);
+    });
+
+    const calculated = calculateRankings(rawData, subjectMaxMap).map((item) => ({
       ...item,
       studentName: item.studentName || '',
     }));
@@ -201,7 +282,6 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
   };
 
   const currentResults = storage.getExamResults(selectedExamId, selectedClassId);
-  const totalMaxPossibleScore = examSubjects.length * currentMaxScore;
 
   // Export to CSV
   const handleExportCsv = () => {
@@ -325,14 +405,81 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
             </select>
           </div>
 
-          {/* Pre-set Max Score Configuration Widget */}
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-700 mb-1 flex items-center justify-between">
-              <span>ពិន្ទុពេញកំណត់ទុកជាមុន</span>
-              <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
-                ត្រឹម ១៥០ ចុះក្រោម
-              </span>
-            </label>
+          {/* Pre-set Max Score Configuration Widget: Per-Subject Customization */}
+          <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-200/90 shadow-2xs">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                <span>ពិន្ទុពេញកំណត់ទុកជាមុន</span>
+                <span className="text-[9px] text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded-full font-bold border border-amber-300">
+                  {selectedSubjectForMax && selectedSubjectForMax !== 'all'
+                    ? `មុខវិជ្ជា៖ ${examSubjects.find((s) => s.id === selectedSubjectForMax)?.nameKm || ''}`
+                    : 'កំណត់ស្មើគ្នា'}
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={openBatchSubjectMaxModal}
+                className="text-[10px] text-blue-900 bg-white hover:bg-amber-100 px-2 py-0.5 rounded-md font-bold border border-amber-300 transition-colors cursor-pointer flex items-center gap-1"
+                title="បើកតារាងកំណត់ពិន្ទុពេញគ្រប់មុខវិជ្ជា"
+              >
+                <span>⚙️ តារាងគ្រប់មុខ</span>
+              </button>
+            </div>
+
+            {/* Subject Selector Dropdown */}
+            <div className="mb-2">
+              <select
+                value={selectedSubjectForMax || (examSubjects[0]?.id || 'all')}
+                onChange={(e) => {
+                  const sid = e.target.value;
+                  setSelectedSubjectForMax(sid);
+                  if (sid === 'all') {
+                    setMaxScoreInput(fallbackMaxScore);
+                  } else {
+                    setMaxScoreInput(getSubjectMax(sid));
+                  }
+                }}
+                className="w-full text-xs font-bold bg-white border border-amber-300 rounded-xl p-2 focus:ring-2 focus:ring-amber-500 focus:outline-hidden text-slate-900 shadow-2xs"
+              >
+                <optgroup label="👉 កំណត់ម្តងមួយមុខវិជ្ជា (តាមសំណូមពរ)៖">
+                  {examSubjects.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      📖 {s.nameKm} — (ពិន្ទុពេញបច្ចុប្បន្ន: {getSubjectMax(s.id)})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="ជម្រើសកំណត់ស្មើគ្នា៖">
+                  <option value="all">⚡ កំណត់ស្មើគ្នាសម្រាប់គ្រប់មុខវិជ្ជាទាំងអស់</option>
+                </optgroup>
+              </select>
+            </div>
+
+            {/* Quick Switch Subject Pills */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1.5 mb-1.5 scrollbar-thin">
+              {examSubjects.map((sbj) => {
+                const isCur = selectedSubjectForMax === sbj.id;
+                const sMax = getSubjectMax(sbj.id);
+                return (
+                  <button
+                    key={sbj.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubjectForMax(sbj.id);
+                      setMaxScoreInput(sMax);
+                    }}
+                    className={`text-[10px] px-2 py-1 rounded-lg font-bold flex-shrink-0 transition-all cursor-pointer flex items-center gap-1 ${
+                      isCur
+                        ? 'bg-amber-500 text-slate-950 shadow-xs border border-amber-600 scale-102'
+                        : 'bg-white text-slate-700 hover:bg-amber-100 border border-slate-200'
+                    }`}
+                  >
+                    <span>{sbj.nameKm}</span>
+                    <span className="font-mono text-[9px] bg-black/10 px-1 rounded">{sMax}</span>
+                  </button>
+                );
+              })}
+            </div>
+
             <div className="flex items-center gap-1.5">
               <div className="relative flex-1">
                 <input
@@ -341,38 +488,46 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
                   max={150}
                   value={maxScoreInput}
                   onChange={(e) => setMaxScoreInput(Number(e.target.value))}
-                  className="w-full text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl p-2 text-center text-blue-950 focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
+                  className="w-full text-xs font-mono font-bold bg-white border border-slate-300 rounded-xl p-2 text-center text-blue-950 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-bold">
-                  /មុខ
+                  {selectedSubjectForMax === 'all'
+                    ? '/គ្រប់មុខ'
+                    : `/${examSubjects.find((s) => s.id === selectedSubjectForMax)?.nameKm || 'មុខនេះ'}`}
                 </span>
               </div>
               <button
                 type="button"
-                onClick={() => handleSaveMaxScore(maxScoreInput)}
-                className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex-shrink-0"
+                onClick={() => handleSaveMaxScore(maxScoreInput, selectedSubjectForMax)}
+                className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex-shrink-0"
                 title="រក្សាទុកការកំណត់ពិន្ទុពេញ"
               >
-                កំណត់
+                {selectedSubjectForMax === 'all'
+                  ? 'កំណត់គ្រប់មុខ'
+                  : `កំណត់ ${examSubjects.find((s) => s.id === selectedSubjectForMax)?.nameKm || 'មុខនេះ'}`}
               </button>
             </div>
+
             {/* Quick Presets */}
-            <div className="flex items-center gap-1 mt-1 text-[10px]">
-              <span className="text-slate-400">រហ័ស:</span>
-              {[50, 100, 150].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => handleSaveMaxScore(preset)}
-                  className={`px-1.5 py-0.5 rounded cursor-pointer font-mono font-bold transition-colors ${
-                    currentMaxScore === preset
-                      ? 'bg-blue-900 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {preset}
-                </button>
-              ))}
+            <div className="flex items-center justify-between gap-1 mt-2 text-[10px]">
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500 font-semibold">រហ័ស:</span>
+                {[25, 50, 75, 100, 150].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => handleSaveMaxScore(preset, selectedSubjectForMax)}
+                    className={`px-1.5 py-0.5 rounded-md cursor-pointer font-mono font-bold transition-colors ${
+                      maxScoreInput === preset
+                        ? 'bg-blue-900 text-white shadow-2xs'
+                        : 'bg-white text-slate-700 hover:bg-amber-100 border border-slate-200'
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+              <span className="text-[10px] text-slate-500 font-medium">ត្រឹម ១៥០</span>
             </div>
           </div>
 
@@ -411,7 +566,7 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
                 តារាងចំណាត់ថ្នាក់សិស្ស · {currentExam?.title} ({currentClass?.name})
               </h3>
               <p className="text-[10px] text-slate-400">
-                គណនាលើ {examSubjects.length} មុខវិជ្ជា (ពិន្ទុពេញក្នុងមួយមុខវិជ្ជា: {currentMaxScore} ពិន្ទុ | ពិន្ទុសរុបពេញ: {totalMaxPossibleScore})
+                គណនាលើ {examSubjects.length} មុខវិជ្ជា · ពិន្ទុសរុបពេញ: <strong className="text-slate-700">{totalMaxPossibleScore}</strong>
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -436,7 +591,7 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
                   <th className="py-2.5 px-3 w-28">អត្តលេខ</th>
                   <th className="py-2.5 px-3">ឈ្មោះសិស្ស</th>
                   <th className="py-2.5 px-3 text-center">ពិន្ទុសរុប ({totalMaxPossibleScore})</th>
-                  <th className="py-2.5 px-3 text-center">មធ្យមភាគ ({currentMaxScore})</th>
+                  <th className="py-2.5 px-3 text-center">មធ្យមភាគ</th>
                   <th className="py-2.5 px-3 text-center">និទ្ទេស</th>
                   <th className="py-2.5 px-3">ការវាយតម្លៃ</th>
                   <th className="py-2.5 px-3 text-right">ព្រឹត្តិបត្រពិន្ទុ</th>
@@ -566,11 +721,11 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
                   បញ្ចូលពិន្ទុតាមមុខវិជ្ជា · {currentExam?.title} ({currentClass?.name})
                 </h3>
                 <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full border border-amber-200">
-                  ពិន្ទុពេញកំណត់ត្រឹម: {currentMaxScore} / ១៥០
+                  ពិន្ទុពេញសរុប: {totalMaxPossibleScore} (កំណត់តាមមុខវិជ្ជា)
                 </span>
               </div>
               <p className="text-[10px] text-slate-500 mt-0.5">
-                លោកអ្នកអាចបន្ថែម ឬដកមុខវិជ្ជាក្នុងការប្រឡងនេះបានយ៉ាងងាយស្រួល · ពិន្ទុនឹងត្រូវបានរក្សាទុកជាអចិន្ត្រៃយ៍
+                លោកអ្នកអាចកំណត់ពិន្ទុពេញម្តងមួយមុខវិជ្ជា ឬបន្ថែម/ដកមុខវិជ្ជាក្នុងការប្រឡងនេះបានយ៉ាងងាយស្រួល
               </p>
             </div>
 
@@ -606,29 +761,46 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
                   <th className="py-2.5 px-3 w-24 sticky left-12 bg-slate-100 z-10">អត្តលេខ</th>
                   <th className="py-2.5 px-3 min-w-[140px] sticky left-36 bg-slate-100 z-10">ឈ្មោះសិស្ស</th>
                   
-                  {/* Dynamic Subject Column Headers with Delete / Remove button */}
-                  {examSubjects.map((sbj) => (
-                    <th key={sbj.id} className="py-2.5 px-2 text-center min-w-[100px] border-l border-slate-200">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <div className="flex items-center gap-1 justify-center w-full">
-                          <span className="font-bold text-slate-900 truncate max-w-[100px]" title={sbj.nameKm}>
-                            {sbj.nameKm}
-                          </span>
+                  {/* Dynamic Subject Column Headers with Delete / Remove button & Clickable Per-Subject Max */}
+                  {examSubjects.map((sbj) => {
+                    const sbjMax = getSubjectMax(sbj.id);
+                    const isSelected = selectedSubjectForMax === sbj.id;
+                    return (
+                      <th
+                        key={sbj.id}
+                        className={`py-2 px-2 text-center min-w-[105px] border-l border-slate-200 transition-colors ${
+                          isSelected ? 'bg-amber-100/70 ring-2 ring-amber-400' : ''
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-0.5">
+                          <div className="flex items-center gap-1 justify-center w-full">
+                            <span className="font-bold text-slate-900 truncate max-w-[90px]" title={sbj.nameKm}>
+                              {sbj.nameKm}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setSubjectToRemove(sbj)}
+                              title={`ដកមុខវិជ្ជា «${sbj.nameKm}» ចេញពីការប្រឡងនេះ`}
+                              className="text-slate-400 hover:text-rose-600 p-0.5 rounded transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          {/* Clickable individual subject max score badge - opens direct edit modal */}
                           <button
                             type="button"
-                            onClick={() => setSubjectToRemove(sbj)}
-                            title={`ដកមុខវិជ្ជា «${sbj.nameKm}» ចេញពីការប្រឡងនេះ`}
-                            className="text-slate-400 hover:text-rose-600 p-0.5 rounded transition-colors cursor-pointer"
+                            onClick={() => handleOpenSingleSubjectModal(sbj)}
+                            title={`ចុចដើម្បីកែប្រែពិន្ទុពេញសម្រាប់មុខវិជ្ជា «${sbj.nameKm}» (ម្តងមួយៗ)`}
+                            className="text-[10px] text-amber-900 font-mono font-bold bg-amber-50 hover:bg-amber-200 hover:border-amber-500 px-2 py-0.5 rounded-md border border-amber-300 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <span>(ពេញ: {sbjMax})</span>
+                            <span className="text-[10px] text-amber-700">✎ កែ</span>
                           </button>
                         </div>
-                        <span className="text-[9px] text-amber-700 font-mono font-bold bg-amber-50 px-1 rounded border border-amber-200/60">
-                          (ពេញ: {currentMaxScore})
-                        </span>
-                      </div>
-                    </th>
-                  ))}
+                      </th>
+                    );
+                  })}
 
                   {/* Add Subject Header Button Column */}
                   <th className="py-2 px-2 text-center w-24 border-l border-slate-200">
@@ -659,17 +831,18 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
                         {student.khmerName}
                       </td>
 
-                      {/* Dynamic Score Inputs */}
+                      {/* Dynamic Score Inputs with per-subject max score validation */}
                       {examSubjects.map((sbj) => {
                         const val = studentScores[sbj.id] ?? 0;
-                        const isOverMax = val > currentMaxScore || val > 150;
+                        const sbjMax = getSubjectMax(sbj.id);
+                        const isOverMax = val > sbjMax || val > 150;
 
                         return (
                           <td key={sbj.id} className="py-2 px-2 text-center border-l border-slate-100">
                             <input
                               type="number"
                               min={0}
-                              max={currentMaxScore}
+                              max={sbjMax}
                               value={val}
                               onChange={(e) =>
                                 handleScoreChange(student.id, sbj.id, parseFloat(e.target.value))
@@ -694,7 +867,7 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
 
           <div className="p-4 bg-slate-50/70 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
             <div>
-              💡 <strong>ចំណាំ៖</strong> ពិន្ទុដែលបញ្ចូលមិនអាចលើសពីពិន្ទុអតិបរមា <strong>{currentMaxScore}</strong> (ត្រឹម ១៥០ ចុះក្រោម) បានឡើយ។
+              💡 <strong>ចំណាំ៖</strong> ពិន្ទុដែលបញ្ចូលមិនអាចលើសពីពិន្ទុពេញរបស់មុខវិជ្ជានីមួយៗបានឡើយ (កែប្រែពិន្ទុពេញតាមមុខវិជ្ជាក្នុងប្រអប់ «ពិន្ទុពេញកំណត់ទុកជាមុន» ខាងលើ ឬចុចលើផ្លាក ✎ លើក្បាលជួរឈរ)។
             </div>
             <button
               type="button"
@@ -834,6 +1007,232 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
                 <Trash2 className="w-4 h-4" />
                 <span>យល់ព្រមដក</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Edit Max Score for a Single Subject (ម្តងមួយៗ) */}
+      {editingSubjectForMax && (
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg">
+                  📖
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    កំណត់ពិន្ទុពេញ៖ {editingSubjectForMax.nameKm}
+                  </h3>
+                  <p className="text-[11px] text-amber-800 font-medium">
+                    {currentExam?.title} ({currentClass?.name})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSubjectForMax(null)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-amber-50/70 border border-amber-200/90 rounded-xl p-3 text-xs text-amber-900 leading-relaxed">
+                <span className="font-bold">✨ កំណត់សម្រាប់តែមួយមុខវិជ្ជា៖</span> ការផ្លាស់ប្តូរពិន្ទុពេញនេះ នឹងមានសុពលភាពសម្រាប់តែមុខវិជ្ជា <strong className="font-bold underline">«{editingSubjectForMax.nameKm}»</strong> មួយប៉ុណ្ណោះ ដោយមិនប៉ះពាល់មុខវិជ្ជាផ្សេងទៀតឡើយ។
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  ពិន្ទុពេញថ្មី (ត្រឹម ១៥០ ចុះក្រោម)៖
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={1}
+                    max={150}
+                    value={singleSubjectMaxInput}
+                    onChange={(e) => setSingleSubjectMaxInput(Number(e.target.value))}
+                    className="w-full text-2xl font-mono font-bold bg-slate-50 border-2 border-amber-300 focus:border-amber-500 rounded-xl p-3 text-center text-blue-950 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                    autoFocus
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
+                    ពិន្ទុពេញ
+                  </span>
+                </div>
+              </div>
+
+              {/* Quick Preset Buttons */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">
+                  ជ្រើសរើសរហ័ស៖
+                </label>
+                <div className="grid grid-cols-5 gap-2">
+                  {[25, 50, 75, 100, 150].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setSingleSubjectMaxInput(preset)}
+                      className={`py-2 text-xs font-mono font-bold rounded-xl border transition-all cursor-pointer ${
+                        singleSubjectMaxInput === preset
+                          ? 'bg-amber-500 border-amber-600 text-slate-950 shadow-xs scale-102 font-black'
+                          : 'bg-white border-slate-200 text-slate-700 hover:bg-amber-50 hover:border-amber-300'
+                      }`}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingSubjectForMax(null)}
+                  className="px-4 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                >
+                  បោះបង់
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveSingleSubjectModal(editingSubjectForMax.id, singleSubjectMaxInput)}
+                  className="px-5 py-2.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>រក្សាទុក «{editingSubjectForMax.nameKm}»</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Full Batch Subject Max Score Matrix */}
+      {isSubjectMaxModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3 flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center font-bold">
+                  ⚙️
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    តារាងកំណត់ពិន្ទុពេញតាមមុខវិជ្ជា (ម្តងមួយៗ)
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    កំណត់ពិន្ទុពេញសម្រាប់មុខវិជ្ជានីមួយៗដោយឡែកពីគ្នា ត្រឹម ១៥០ ចុះក្រោម
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSubjectMaxModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-1 space-y-3">
+              <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white">
+                {examSubjects.map((sbj) => {
+                  const currentVal = batchSubjectMaxes[sbj.id] ?? getSubjectMax(sbj.id);
+                  return (
+                    <div
+                      key={sbj.id}
+                      className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-800 flex items-center justify-center text-sm font-bold border border-amber-200">
+                          📖
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900">{sbj.nameKm}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            {sbj.code} · បច្ចុប្បន្ន: {getSubjectMax(sbj.id)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {/* Quick Presets */}
+                        <div className="flex items-center gap-1">
+                          {[25, 50, 75, 100, 150].map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => {
+                                setBatchSubjectMaxes((prev) => ({
+                                  ...prev,
+                                  [sbj.id]: preset,
+                                }));
+                              }}
+                              className={`text-[10px] px-2 py-1 rounded-md font-mono font-bold transition-all cursor-pointer ${
+                                currentVal === preset
+                                  ? 'bg-blue-900 text-white shadow-2xs'
+                                  : 'bg-slate-100 hover:bg-amber-100 text-slate-700'
+                              }`}
+                            >
+                              {preset}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Direct input */}
+                        <div className="w-20">
+                          <input
+                            type="number"
+                            min={1}
+                            max={150}
+                            value={currentVal}
+                            onChange={(e) => {
+                              const val = Math.max(1, Math.min(150, Number(e.target.value)));
+                              setBatchSubjectMaxes((prev) => ({
+                                ...prev,
+                                [sbj.id]: val,
+                              }));
+                            }}
+                            className="w-full text-xs font-mono font-bold text-center bg-slate-50 border border-slate-300 rounded-lg py-1 px-2 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 mt-3 border-t border-slate-100 flex-shrink-0">
+              <div className="text-xs text-slate-600 font-semibold">
+                ពិន្ទុពេញសរុបរំពឹងទុក៖{' '}
+                <span className="font-mono font-bold text-blue-900">
+                  {examSubjects.reduce(
+                    (acc, s) => acc + (batchSubjectMaxes[s.id] ?? getSubjectMax(s.id)),
+                    0
+                  )}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSubjectMaxModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
+                >
+                  បោះបង់
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveBatchSubjectMaxes}
+                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>រក្សាទុកទាំងអស់</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
