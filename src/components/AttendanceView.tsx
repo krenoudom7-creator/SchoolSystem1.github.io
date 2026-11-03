@@ -16,6 +16,8 @@ import {
   Search,
   Filter,
   QrCode,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import {
   Student,
@@ -26,7 +28,14 @@ import {
   User,
 } from '../types/index.ts';
 import { storage } from '../services/storage.ts';
-import { formatKhmerDate, getAttendanceStatusBadge } from '../utils/calculations.ts';
+import {
+  formatKhmerDate,
+  getAttendanceStatusBadge,
+  getTodayLocalStr,
+  KHMER_MONTHS,
+  getKhmerMonthName,
+  toKhmerNum,
+} from '../utils/calculations.ts';
 import { safeAvatar } from '../utils/avatar.ts';
 import { QrAttendanceScannerModal } from './QrAttendanceScannerModal.tsx';
 
@@ -47,14 +56,20 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   currentUser,
   onOpenTelegramModal,
 }) => {
-  // Filters
+  const todayStr = getTodayLocalStr();
+
+  // Filters - Default to real current date (ថ្ងៃបច្ចុប្បន្ន)
   const [selectedYearId, setSelectedYearId] = useState<string>(
     academicYears.find((y) => y.isCurrent)?.id || academicYears[0]?.id || ''
   );
-  const [selectedDate, setSelectedDate] = useState<string>('2026-10-30');
+  const [selectedDate, setSelectedDate] = useState<string>(() => getTodayLocalStr());
   const [selectedClassId, setSelectedClassId] = useState<string>(classes[0]?.id || 'cls-7a');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('ព្រឹក ម៉ោងទី ១ (០៧:០០ - ០៧:៥០)');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('sbj-math');
+
+  // Derive active year & month from selectedDate (YYYY-MM-DD)
+  const [activeYearStr, activeMonthStr, activeDayStr] = selectedDate.split('-');
+  const isToday = selectedDate === todayStr;
 
   // Attendance state: map studentId -> { status, reason }
   const [attendanceState, setAttendanceState] = useState<
@@ -71,6 +86,38 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   const [isExistingSession, setIsExistingSession] = useState(false);
   const [filterQuery, setFilterQuery] = useState('');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+  // Switch month helper (preserves year and clamps day to valid days in that month)
+  const handleSelectMonth = (newMonthVal: string) => {
+    const yearNum = Number(activeYearStr) || new Date().getFullYear();
+    const monthNum = Number(newMonthVal);
+    // If selecting the current real month and year, jump to today's date
+    const now = new Date();
+    if (yearNum === now.getFullYear() && monthNum === now.getMonth() + 1) {
+      setSelectedDate(getTodayLocalStr());
+      return;
+    }
+    const currentDayNum = Number(activeDayStr) || 1;
+    const maxDaysInMonth = new Date(yearNum, monthNum, 0).getDate();
+    const safeDay = String(Math.min(currentDayNum, maxDaysInMonth)).padStart(2, '0');
+    setSelectedDate(`${yearNum}-${newMonthVal}-${safeDay}`);
+  };
+
+  // Shift date by N days
+  const handleShiftDate = (daysDelta: number) => {
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + daysDelta);
+    const yyyy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    setSelectedDate(`${yyyy}-${mm}-${dd}`);
+  };
+
+  // Jump to current real date
+  const handleJumpToToday = () => {
+    setSelectedDate(getTodayLocalStr());
+  };
 
   const handleScanMarkAttendance = (studentId: string, status: AttendanceStatus) => {
     setAttendanceState((prev) => ({
@@ -102,6 +149,12 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     const q = filterQuery.toLowerCase().trim();
     return s.khmerName.toLowerCase().includes(q) || s.studentId.toLowerCase().includes(q);
   });
+
+  // Get all attendance records for the selected class & selected month (YYYY-MM)
+  const currentYearMonthPrefix = `${activeYearStr}-${activeMonthStr}`;
+  const classMonthRecords = storage
+    .getAttendanceRecords({ classId: selectedClassId })
+    .filter((r) => r.date.startsWith(currentYearMonthPrefix));
 
   // Load existing records or default to "present"
   useEffect(() => {
@@ -135,7 +188,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     setAttendanceState(newState);
     setIsSavedRecently(false);
     setAlertInfo({ show: false, message: '', unexcusedSent: 0 });
-  }, [selectedClassId, selectedDate, selectedPeriod]);
+  }, [selectedClassId, selectedDate, selectedPeriod, students.length]);
 
   // Set single student status
   const handleSetStatus = (studentId: string, status: AttendanceStatus) => {
@@ -197,7 +250,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     setIsExistingSession(true);
 
     const currentClass = classes.find((c) => c.id === selectedClassId);
-    let msg = `បានរក្សាទុកវត្តមាន ${currentClass?.name || ''} ដោយជោគជ័យ!`;
+    let msg = `បានរក្សាទុកវត្តមាន ${currentClass?.name || ''} សម្រាប់ ${formatKhmerDate(selectedDate)} ដោយជោគជ័យ!`;
     if (result.unexcusedAlertsSent > 0) {
       msg += ` ប្រព័ន្ធបានបញ្ជូនដំណឹង Telegram ស្វ័យប្រវត្តិចំនួន ${result.unexcusedAlertsSent} ទៅកាន់អាណាព្យាបាលសិស្សអវត្តមានឥតច្បាប់។`;
     }
@@ -242,17 +295,27 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-600 -ml-4"></span>
               <span className="text-xs font-semibold text-blue-900 uppercase tracking-wider">
-                អនុវិទ្យាល័យទួលសំបួរ · ប្រព័ន្ធកត់ត្រាវត្តមាន
+                អនុវិទ្យាល័យទួលសំបួរ · ប្រព័ន្ធកត់ត្រាវត្តមាន និងអវត្តមាន
               </span>
+              {isToday ? (
+                <span className="px-2.5 py-0.5 text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full">
+                  📅 ថ្ងៃបច្ចុប្បន្ន៖ {formatKhmerDate(selectedDate)}
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 rounded-full">
+                  📅 កាលបរិច្ឆេទជ្រើសរើស៖ {formatKhmerDate(selectedDate)}
+                </span>
+              )}
             </div>
-            <h2 className="text-xl font-bold font-moul text-slate-900 mt-1">
-              កត់ត្រាវត្តមានសិស្សប្រចាំថ្ងៃ និងតាមម៉ោងសិក្សា
+            <h2 className="text-xl font-bold font-moul text-slate-900 mt-1.5">
+              កត់ត្រាវត្តមាន និងអវត្តមានសិស្សប្រចាំថ្ងៃ (ដើរតាមថ្ងៃបច្ចុប្បន្ន & គ្រប់ខែទាំង ១២)
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              កំណត់ស្ថានភាពវត្តមាន ៥ កម្រិត គណនាស្ថិតិភ្លាមៗ និងផ្ញើសារ Telegram ទៅអាណាព្យាបាលស្វ័យប្រវត្តិ
+              កំណត់ស្ថានភាពវត្តមាន ៥ កម្រិត ដើរតាមកាលបរិច្ឆេទបច្ចុប្បន្នស្វ័យប្រវត្តិ មើលសរុបអវត្តមានគ្រប់ខែទាំង ១២ និងផ្ញើសារ Telegram ទៅអាណាព្យាបាល
             </p>
           </div>
 
@@ -286,13 +349,93 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
           </div>
         </div>
 
+        {/* All 12 Months Quick Selector Bar */}
+        <div className="mt-5 pt-4 border-t border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-blue-900" />
+              <span className="text-xs font-bold text-slate-800">
+                ជ្រើសរើសខែទាំង ១២ (ឆ្នាំ {toKhmerNum(activeYearStr)})៖
+              </span>
+            </div>
+
+            {/* Quick Day Navigation Controls */}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleShiftDate(-1)}
+                className="px-2.5 py-1 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                title="ថ្ងៃមុន"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>ថ្ងៃមុន</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleJumpToToday}
+                className={`px-3 py-1 text-[11px] font-bold rounded-lg flex items-center gap-1.5 cursor-pointer transition-all ${
+                  isToday
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-blue-900 hover:bg-blue-800 text-white shadow-xs'
+                }`}
+              >
+                <CalendarCheck2 className="w-3.5 h-3.5" />
+                <span>ថ្ងៃបច្ចុប្បន្ន ({formatKhmerDate(todayStr)})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleShiftDate(1)}
+                className="px-2.5 py-1 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                title="ថ្ងៃបន្ទាប់"
+              >
+                <span>ថ្ងៃបន្ទាប់</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-1.5">
+            {KHMER_MONTHS.map((m) => {
+              const isSelectedMonth = activeMonthStr === m.value;
+              const isCurrentRealMonth =
+                todayStr.split('-')[1] === m.value && todayStr.split('-')[0] === activeYearStr;
+
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => handleSelectMonth(m.value)}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex flex-col items-center justify-center border ${
+                    isSelectedMonth
+                      ? 'bg-blue-900 text-white border-blue-900 shadow-xs'
+                      : isCurrentRealMonth
+                      ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100'
+                      : 'bg-slate-50 text-slate-700 border-slate-200/80 hover:bg-slate-100'
+                  }`}
+                >
+                  <span>ខែ{m.name}</span>
+                  <span
+                    className={`text-[9px] ${
+                      isSelectedMonth ? 'text-amber-300' : 'text-slate-400'
+                    }`}
+                  >
+                    ទី {toKhmerNum(m.number)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Existing Session Alert Notice */}
         {isExistingSession && (
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs text-blue-900">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-blue-700 flex-shrink-0" />
               <span>
-                <strong>ចំណាំ៖</strong> ថ្នាក់នេះបានកត់ត្រាវត្តមានរួចហើយសម្រាប់ម៉ោងសិក្សានេះ។ អ្នកអាចកែប្រែទិន្នន័យបាន ហើយចុច រក្សាទុក ដើម្បីធ្វើបច្ចុប្បន្នភាព (ការពារការកត់ត្រាស្ទួន)។
+                <strong>ចំណាំ៖</strong> ថ្នាក់នេះបានកត់ត្រាវត្តមានរួចហើយសម្រាប់កាលបរិច្ឆេទ និងម៉ោងសិក្សានេះ។ អ្នកអាចកែប្រែទិន្នន័យបាន ហើយចុច រក្សាទុក ដើម្បីធ្វើបច្ចុប្បន្នភាព។
               </span>
             </div>
           </div>
@@ -325,7 +468,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
         )}
 
         {/* Filter Selection Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-5 pt-5 border-t border-slate-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mt-4 pt-4 border-t border-slate-100">
           {/* Academic Year */}
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 mb-1">ឆ្នាំសិក្សា</label>
@@ -342,15 +485,35 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
             </select>
           </div>
 
+          {/* Month Dropdown (All 12 Months) */}
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 mb-1">ខែ (ទាំង ១២ ខែ)</label>
+            <select
+              value={activeMonthStr}
+              onChange={(e) => handleSelectMonth(e.target.value)}
+              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 font-semibold text-blue-950 focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
+            >
+              {KHMER_MONTHS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  ខែ{m.name} ({m.nameEn})
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Date Picker */}
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 mb-1">កាលបរិច្ឆេទ</label>
+            <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+              ថ្ងៃខែឆ្នាំកត់ត្រា {isToday && <span className="text-emerald-600">(ថ្ងៃនេះ)</span>}
+            </label>
             <div className="relative">
               <input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
+                onChange={(e) => {
+                  if (e.target.value) setSelectedDate(e.target.value);
+                }}
+                className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 font-semibold text-slate-900 focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
               />
             </div>
           </div>
@@ -408,10 +571,12 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
       {/* Live Attendance Counter Bar */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-700">ស្ថិតិវត្តមានបច្ចុប្បន្ន:</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-slate-700">
+              ស្ថិតិវត្តមាន ({formatKhmerDate(selectedDate)}):
+            </span>
             <span className="text-xs text-slate-500">
-              សរុប {classStudents.length} នាក់ · ភាគរយ {currentRate}%
+              សរុប {classStudents.length} នាក់ · ភាគរយវត្តមាន {currentRate}%
             </span>
           </div>
 
@@ -439,11 +604,13 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         {/* Table Toolbar */}
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-sm font-semibold text-slate-900">
               បញ្ជីឈ្មោះសិស្សក្នុងថ្នាក់ ({displayedStudents.length} នាក់)
             </h3>
-            <span className="text-xs text-slate-400">· ជ្រើសរើសស្ថានភាពសិស្សម្នាក់ៗ</span>
+            <span className="text-xs text-blue-900 bg-blue-50 px-2.5 py-0.5 rounded-full font-semibold">
+              ខែ{getKhmerMonthName(activeMonthStr)} ឆ្នាំ{toKhmerNum(activeYearStr)}
+            </span>
           </div>
 
           <div className="relative w-full sm:w-64">
@@ -464,17 +631,26 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
             <thead>
               <tr className="bg-slate-50/80 text-[11px] font-semibold text-slate-600 border-b border-slate-200">
                 <th className="py-3 px-3 text-center w-12">ល.រ</th>
-                <th className="py-3 px-3 w-28">អត្តលេខ</th>
+                <th className="py-3 px-3 w-24">អត្តលេខ</th>
                 <th className="py-3 px-3">គោត្តនាម និងនាម</th>
-                <th className="py-3 px-2 text-center w-16">ភេទ</th>
-                <th className="py-3 px-3">ស្ថានភាពវត្តមាន (ជ្រើសរើសមួយ)</th>
-                <th className="py-3 px-3 w-64">មូលហេតុ / កំណត់សម្គាល់</th>
+                <th className="py-3 px-2 text-center w-14">ភេទ</th>
+                <th className="py-3 px-3 text-center">
+                  សរុបអវត្តមានខែ{getKhmerMonthName(activeMonthStr)}
+                </th>
+                <th className="py-3 px-3">ស្ថានភាពវត្តមានប្រចាំថ្ងៃ (ជ្រើសរើសមួយ)</th>
+                <th className="py-3 px-3 w-56">មូលហេតុ / កំណត់សម្គាល់</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
               {displayedStudents.map((student, index) => {
                 const current = attendanceState[student.id] || { status: 'present', reason: '' };
                 const isUnexcused = current.status === 'absent_no_permission';
+
+                // Calculate student's monthly absences in the active month
+                const stuMonthRecs = classMonthRecords.filter((r) => r.studentId === student.id);
+                const monthExcused = stuMonthRecs.filter((r) => r.status === 'absent_permission').length;
+                const monthUnexcused = stuMonthRecs.filter((r) => r.status === 'absent_no_permission').length;
+                const monthTotalAbsent = monthExcused + monthUnexcused;
 
                 return (
                   <tr
@@ -509,6 +685,21 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                     {/* Gender */}
                     <td className="py-3 px-2 text-center text-slate-600 font-medium">
                       {student.gender}
+                    </td>
+
+                    {/* Monthly Absence Summary Badge */}
+                    <td className="py-3 px-3 text-center">
+                      {monthTotalAbsent === 0 ? (
+                        <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700">
+                          ០ ដង
+                        </span>
+                      ) : (
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-100 border border-slate-200 text-[10px] font-semibold">
+                          <span className="text-amber-700">ច្បាប់: {monthExcused}</span>
+                          <span className="text-slate-300">|</span>
+                          <span className="text-rose-700 font-bold">ឥតច្បាប់: {monthUnexcused}</span>
+                        </div>
+                      )}
                     </td>
 
                     {/* 5-State Selector Buttons */}
@@ -612,7 +803,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
 
               {displayedStudents.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-xs text-slate-400">
+                  <td colSpan={7} className="py-12 text-center text-xs text-slate-400">
                     <p className="font-semibold text-slate-700 text-sm">មិនទាន់មានសិស្សក្នុងថ្នាក់រៀននេះនៅឡើយទេ</p>
                     <p className="text-slate-400 mt-1">សូមចូលទៅកាន់ម៉ឺនុយ «គ្រប់គ្រងសិស្ស» ដើម្បីបន្ថែមសិស្សចូលក្នុងថ្នាក់នេះជាមុនសិន</p>
                   </td>
@@ -626,7 +817,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
         <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="text-xs text-slate-500">
             កត់ត្រាដោយ៖ <strong className="text-slate-800">{currentUser.name}</strong> ·{' '}
-            {formatKhmerDate(selectedDate)}
+            <strong className="text-blue-950">{formatKhmerDate(selectedDate)}</strong>
           </div>
 
           <div className="flex items-center gap-3">

@@ -28,7 +28,7 @@ import {
   ExamResult,
   UserRole,
 } from '../types/index.ts';
-import { calculateAttendanceStats, checkAbsenceWarning } from '../utils/calculations.ts';
+import { calculateAttendanceStats, checkAbsenceWarning, getTodayLocalStr } from '../utils/calculations.ts';
 import { safeAvatar } from '../utils/avatar.ts';
 import { NavTab } from './Sidebar.tsx';
 import { HeroBannerCarousel } from './HeroBannerCarousel.tsx';
@@ -59,8 +59,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onTriggerToast,
   onRefresh,
 }) => {
-  // Today's date filter
-  const todayStr = '2026-10-30'; // align with demo seed date
+  // Today's date filter (follows current real date)
+  const todayStr = getTodayLocalStr();
   const todayRecords = attendanceRecords.filter((r) => r.date === todayStr);
   const todayStats = calculateAttendanceStats(todayRecords);
 

@@ -14,7 +14,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { User, UserRole, NotificationItem } from '../types/index.ts';
-import { formatKhmerDate } from '../utils/calculations.ts';
+import { formatKhmerDate, getTodayLocalStr } from '../utils/calculations.ts';
 import { safeAvatar, DEFAULT_ADMIN_AVATAR, SCHOOL_LOGO_URL } from '../utils/avatar.ts';
 import { storage } from '../services/storage.ts';
 
@@ -44,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayLocalStr();
   const khmerDateStr = formatKhmerDate(todayStr);
 
   const roleLabels: Record<UserRole, { label: string; badgeColor: string }> = {

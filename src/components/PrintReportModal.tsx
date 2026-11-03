@@ -135,39 +135,91 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
             <div className="space-y-4">
               <div className="flex justify-between text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
                 <div>
-                  កាលបរិច្ឆេទ៖ <strong>{formatKhmerDate(data.date || todayStr)}</strong>
+                  រយៈពេល/កាលបរិច្ឆេទ៖{' '}
+                  <strong>{data.periodTitle || formatKhmerDate(data.date || todayStr)}</strong>
                 </div>
                 <div>
-                  ថ្នាក់រៀន៖ <strong>{data.classId === 'all' ? 'គ្រប់ថ្នាក់' : data.classId}</strong>
+                  ថ្នាក់រៀន៖{' '}
+                  <strong>
+                    {data.className || (data.classId === 'all' ? 'គ្រប់ថ្នាក់' : data.classId)}
+                  </strong>
                 </div>
                 <div>
-                  ភាគរយវត្តមាន៖ <strong>{data.stats?.attendanceRate || 100}%</strong>
+                  ភាគរយវត្តមាន៖ <strong>{data.stats?.attendanceRate ?? 100}%</strong>
                 </div>
               </div>
 
-              <table className="w-full border-collapse border border-slate-300 text-xs text-left">
-                <thead>
-                  <tr className="bg-slate-100 font-bold">
-                    <th className="border border-slate-300 p-2 text-center w-10">ល.រ</th>
-                    <th className="border border-slate-300 p-2">ឈ្មោះសិស្ស</th>
-                    <th className="border border-slate-300 p-2 text-center">ស្ថានភាពវត្តមាន</th>
-                    <th className="border border-slate-300 p-2">មូលហេតុនៃការអវត្តមាន</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.records?.slice(0, 15).map((r: any, idx: number) => {
-                    const badge = getAttendanceStatusBadge(r.status);
-                    return (
+              {(data.reportSubType === 'monthly' || data.reportSubType === 'yearly_12months') &&
+              Array.isArray(data.studentSummaries) ? (
+                <table className="w-full border-collapse border border-slate-300 text-xs text-left">
+                  <thead>
+                    <tr className="bg-slate-100 font-bold">
+                      <th className="border border-slate-300 p-2 text-center w-10">ល.រ</th>
+                      <th className="border border-slate-300 p-2">អត្តលេខ</th>
+                      <th className="border border-slate-300 p-2">ឈ្មោះសិស្ស</th>
+                      <th className="border border-slate-300 p-2 text-center">ថ្នាក់</th>
+                      <th className="border border-slate-300 p-2 text-center">មានវត្តមាន</th>
+                      <th className="border border-slate-300 p-2 text-center">មានច្បាប់</th>
+                      <th className="border border-slate-300 p-2 text-center">ឥតច្បាប់</th>
+                      <th className="border border-slate-300 p-2 text-center">ភាគរយ (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.studentSummaries.map((item: any, idx: number) => (
                       <tr key={idx}>
                         <td className="border border-slate-300 p-2 text-center">{idx + 1}</td>
-                        <td className="border border-slate-300 p-2 font-bold">{r.studentName}</td>
-                        <td className="border border-slate-300 p-2 text-center">{badge.label}</td>
-                        <td className="border border-slate-300 p-2 text-slate-600">{r.reason || '—'}</td>
+                        <td className="border border-slate-300 p-2 font-mono">
+                          {item.student?.studentId}
+                        </td>
+                        <td className="border border-slate-300 p-2 font-bold">
+                          {item.student?.khmerName}
+                        </td>
+                        <td className="border border-slate-300 p-2 text-center">{item.className}</td>
+                        <td className="border border-slate-300 p-2 text-center">
+                          {item.stats?.present ?? 0}
+                        </td>
+                        <td className="border border-slate-300 p-2 text-center">
+                          {item.stats?.absentPermission ?? 0}
+                        </td>
+                        <td className="border border-slate-300 p-2 text-center font-bold">
+                          {item.stats?.absentNoPermission ?? 0}
+                        </td>
+                        <td className="border border-slate-300 p-2 text-center font-bold">
+                          {item.stats?.attendanceRate ?? 100}%
+                        </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <table className="w-full border-collapse border border-slate-300 text-xs text-left">
+                  <thead>
+                    <tr className="bg-slate-100 font-bold">
+                      <th className="border border-slate-300 p-2 text-center w-10">ល.រ</th>
+                      <th className="border border-slate-300 p-2">ឈ្មោះសិស្ស</th>
+                      <th className="border border-slate-300 p-2 text-center">កាលបរិច្ឆេទ</th>
+                      <th className="border border-slate-300 p-2 text-center">ស្ថានភាពវត្តមាន</th>
+                      <th className="border border-slate-300 p-2">មូលហេតុនៃការអវត្តមាន</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.records?.map((r: any, idx: number) => {
+                      const badge = getAttendanceStatusBadge(r.status);
+                      return (
+                        <tr key={idx}>
+                          <td className="border border-slate-300 p-2 text-center">{idx + 1}</td>
+                          <td className="border border-slate-300 p-2 font-bold">{r.studentName}</td>
+                          <td className="border border-slate-300 p-2 text-center">{r.date}</td>
+                          <td className="border border-slate-300 p-2 text-center">{badge.label}</td>
+                          <td className="border border-slate-300 p-2 text-slate-600">
+                            {r.reason || '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
 

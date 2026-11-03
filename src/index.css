@@ -186,16 +186,39 @@ body {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
   }
 
+  .print-card-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px !important;
+    justify-items: center !important;
+    align-items: start !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 4px 0 !important;
+  }
+
+  .print-card-item {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    box-shadow: none !important;
+    border: 1.5px solid #94a3b8 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   /* 5. A4 Page format & clean margins */
   @page {
     size: A4 portrait;
-    margin: 1.2cm 1cm 1.2cm 1cm;
+    margin: 1cm 0.8cm 1cm 0.8cm;
   }
 
   /* 6. Ensure high-fidelity color printing for school seal and official stamps */

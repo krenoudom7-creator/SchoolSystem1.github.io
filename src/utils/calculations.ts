@@ -206,6 +206,49 @@ export function checkAbsenceWarning(studentRecords: AttendanceRecord[], threshol
   };
 }
 
+export interface KhmerMonthOption {
+  value: string; // '01' to '12'
+  number: number; // 1 to 12
+  name: string;
+  nameEn: string;
+}
+
+export const KHMER_MONTHS: KhmerMonthOption[] = [
+  { value: '01', number: 1, name: 'មករា', nameEn: 'January' },
+  { value: '02', number: 2, name: 'កុម្ភៈ', nameEn: 'February' },
+  { value: '03', number: 3, name: 'មីនា', nameEn: 'March' },
+  { value: '04', number: 4, name: 'មេសា', nameEn: 'April' },
+  { value: '05', number: 5, name: 'ឧសភា', nameEn: 'May' },
+  { value: '06', number: 6, name: 'មិថុនា', nameEn: 'June' },
+  { value: '07', number: 7, name: 'កក្កដា', nameEn: 'July' },
+  { value: '08', number: 8, name: 'សីហា', nameEn: 'August' },
+  { value: '09', number: 9, name: 'កញ្ញា', nameEn: 'September' },
+  { value: '10', number: 10, name: 'តុលា', nameEn: 'October' },
+  { value: '11', number: 11, name: 'វិច្ឆិកា', nameEn: 'November' },
+  { value: '12', number: 12, name: 'ធ្នូ', nameEn: 'December' },
+];
+
+/**
+ * Returns today's date in YYYY-MM-DD using local system time
+ */
+export function getTodayLocalStr(): string {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Returns Khmer month name from '01'..'12' or month index
+ */
+export function getKhmerMonthName(monthVal: string | number): string {
+  if (monthVal === 'all') return 'គ្រប់ខែទាំងអស់';
+  const padded = String(monthVal).padStart(2, '0');
+  const found = KHMER_MONTHS.find((m) => m.value === padded);
+  return found ? found.name : String(monthVal);
+}
+
 /**
  * Converts Western digits to Khmer numerals e.g. 2026 -> ២០២៦
  */
@@ -218,11 +261,17 @@ export function toKhmerNum(num: number | string): string {
 }
 
 /**
- * Formats a Khmer date string e.g. ថ្ងៃសុក្រ ទី៣០ ខែតុលា ឆ្នាំ២០២៦
+ * Formats a Khmer date string e.g. ថ្ងៃអង្គារ ទី០៣ ខែវិច្ឆិកា ឆ្នាំ២០២៦
  */
 export function formatKhmerDate(dateString: string): string {
   try {
-    const date = new Date(dateString);
+    let date: Date;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      const [y, m, d] = dateString.split('-').map(Number);
+      date = new Date(y, m - 1, d);
+    } else {
+      date = new Date(dateString);
+    }
     if (isNaN(date.getTime())) return dateString;
 
     const khmerDays = ['អាទិត្យ', 'ច័ន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍'];
