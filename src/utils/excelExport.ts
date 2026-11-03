@@ -10,8 +10,9 @@ import {
 import { Student, SchoolClass } from '../types/index.ts';
 
 /**
- * Renders the circular official school logo (preserving exact aspect ratio like CSS object-cover
- * with 1.38x zoom and gold ring border) onto an offscreen square canvas and returns a PNG base64 string.
+ * Renders the circular official school logo at an exact 1:1 aspect ratio
+ * (preserving the full Khmer Kbach gold outer border) onto an offscreen square canvas
+ * and returns a high-DPI PNG base64 string for Excel embedding.
  */
 async function getCircularLogoPngBase64(): Promise<string | null> {
   return new Promise((resolve) => {
@@ -20,7 +21,7 @@ async function getCircularLogoPngBase64(): Promise<string | null> {
       img.crossOrigin = 'anonymous';
       img.onload = () => {
         try {
-          const size = 260;
+          const size = 300;
           const canvas = document.createElement('canvas');
           canvas.width = size;
           canvas.height = size;
@@ -31,7 +32,7 @@ async function getCircularLogoPngBase64(): Promise<string | null> {
           }
 
           const center = size / 2;
-          const radius = size / 2 - 6;
+          const radius = size / 2 - 4;
 
           // White circular base with circular clip
           ctx.save();
@@ -42,24 +43,17 @@ async function getCircularLogoPngBase64(): Promise<string | null> {
           ctx.fill();
           ctx.clip();
 
-          // Preserve natural aspect ratio (identical to CSS object-cover + scale-[1.38])
-          const imgW = img.naturalWidth || img.width || size;
-          const imgH = img.naturalHeight || img.height || size;
-          const coverScale = Math.max(size / imgW, size / imgH);
-          const zoom = 1.38;
-          const drawW = imgW * coverScale * zoom;
-          const drawH = imgH * coverScale * zoom;
-          const offsetX = (size - drawW) / 2;
-          const offsetY = (size - drawH) / 2;
-
-          ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+          // SCHOOL_LOGO_URL is a normalized 1:1 circular image; draw it centered inside the circle
+          const pad = 4;
+          const drawSize = size - pad * 2;
+          ctx.drawImage(img, pad, pad, drawSize, drawSize);
           ctx.restore();
 
-          // Outer gold/amber ring border (#f59e0b)
+          // Crisp outer gold/amber ring border (#d97706)
           ctx.beginPath();
           ctx.arc(center, center, radius, 0, Math.PI * 2);
-          ctx.lineWidth = 6;
-          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = '#d97706';
           ctx.stroke();
 
           const dataUrl = canvas.toDataURL('image/png');
@@ -74,6 +68,44 @@ async function getCircularLogoPngBase64(): Promise<string | null> {
       resolve(null);
     }
   });
+}
+
+/**
+ * Computes the exact 0-based fractional column index so a square logo of `logoWidthPx`
+ * sits at the true horizontal midpoint of the printable table (Columns B .. lastColIndex).
+ */
+function computeExactCenterColOffset(
+  sheet: ExcelJS.Worksheet,
+  lastColIndex: number,
+  logoWidthPx = 82
+): number {
+  const PX_PER_WIDTH_UNIT = 7.5;
+  const colWidthsPx: number[] = [];
+  for (let c = 1; c <= lastColIndex; c++) {
+    const w = sheet.getColumn(c).width || 10;
+    colWidthsPx.push(w * PX_PER_WIDTH_UNIT);
+  }
+
+  // Printable content starts at Column B (1-based index 2 -> 0-based index 1)
+  const leftMarginPx = colWidthsPx[0] || 0;
+  let printableWidthPx = 0;
+  for (let i = 1; i < colWidthsPx.length; i++) {
+    printableWidthPx += colWidthsPx[i];
+  }
+
+  const targetLeftPx = leftMarginPx + (printableWidthPx - logoWidthPx) / 2;
+
+  let accumPx = 0;
+  for (let i = 0; i < colWidthsPx.length; i++) {
+    const colW = colWidthsPx[i];
+    if (accumPx + colW >= targetLeftPx) {
+      const frac = colW > 0 ? (targetLeftPx - accumPx) / colW : 0;
+      return i + Math.max(0, Math.min(0.99, frac));
+    }
+    accumPx += colW;
+  }
+
+  return 4.2;
 }
 
 /**
@@ -154,6 +186,24 @@ async function applyOfficialHeaderAndMetadata(
   // Hide default gridlines so it looks like a clean A4 official sheet
   sheet.views = [{ showGridLines: false }];
 
+  // Ensure A4 paper sizing, horizontal centering, and proper margins for printing
+  sheet.pageSetup = {
+    ...sheet.pageSetup,
+    paperSize: 9, // A4
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    horizontalCentered: true,
+    margins: {
+      left: 0.35,
+      right: 0.35,
+      top: 0.4,
+      bottom: 0.4,
+      header: 0.2,
+      footer: 0.2,
+    },
+  };
+
   // Column A is a narrow left margin
   sheet.getColumn(1).width = 3;
 
@@ -161,10 +211,10 @@ async function applyOfficialHeaderAndMetadata(
   sheet.getRow(1).height = 12;
 
   // Header rows 2..5
-  sheet.getRow(2).height = 19;
-  sheet.getRow(3).height = 18;
-  sheet.getRow(4).height = 18;
-  sheet.getRow(5).height = 20;
+  sheet.getRow(2).height = 20;
+  sheet.getRow(3).height = 19;
+  sheet.getRow(4).height = 19;
+  sheet.getRow(5).height = 21;
 
   // Left MoEYS block
   sheet.mergeCells(`B2:${leftEndColLetter}2`);
@@ -213,17 +263,19 @@ async function applyOfficialHeaderAndMetadata(
   r4.font = { name: 'Segoe UI Symbol', size: 10, bold: true, color: { argb: 'FFD97706' } };
   r4.alignment = { horizontal: 'center', vertical: 'top' };
 
-  // Embed Official Circular School Logo in the exact center with 1:1 fixed pixel aspect ratio
+  // Embed Official Circular School Logo at the exact horizontal center with locked 1:1 pixel dimensions
   const logoPng = await getCircularLogoPngBase64();
   if (logoPng) {
+    const logoSizePx = 82;
+    const exactCenterCol = computeExactCenterColOffset(sheet, lastColIndex, logoSizePx) || logoColOffset;
     const imageId = workbook.addImage({
       base64: logoPng,
       extension: 'png',
     });
     sheet.addImage(imageId, {
-      tl: { col: logoColOffset, row: 1.1 } as any,
-      ext: { width: 80, height: 80 },
-      editAs: 'oneCell',
+      tl: { col: exactCenterCol, row: 1.15 } as any,
+      ext: { width: logoSizePx, height: logoSizePx },
+      editAs: 'absolute',
     });
   }
 
@@ -353,10 +405,10 @@ function appendOfficialSignatures(
   const r3 = startRow + 3;
   const r4 = startRow + 5;
 
-  sheet.getRow(r1).height = 19;
-  sheet.getRow(r2).height = 20;
-  sheet.getRow(r3).height = 28;
-  sheet.getRow(r4).height = 20;
+  sheet.getRow(r1).height = 20;
+  sheet.getRow(r2).height = 22;
+  sheet.getRow(r3).height = 32;
+  sheet.getRow(r4).height = 22;
 
   sheet.mergeCells(`B${r1}:${leftEndColLetter}${r1}`);
   sheet.mergeCells(`B${r2}:${leftEndColLetter}${r2}`);
@@ -373,15 +425,7 @@ function appendOfficialSignatures(
   left2.font = { name: 'Khmer OS Muol Light', size: 10, bold: true, color: { argb: 'FF0F172A' } };
   left2.alignment = { horizontal: 'center', vertical: 'middle' };
 
-  const left3 = sheet.getCell(`B${r3}`);
-  left3.value = '(ហត្ថលេខា)';
-  left3.font = { name: 'Khmer OS Battambang', size: 9, italic: true, color: { argb: 'FF94A3B8' } };
-  left3.alignment = { horizontal: 'center', vertical: 'middle' };
-
-  const left4 = sheet.getCell(`B${r4}`);
-  left4.value = 'លោកគ្រូ ចាន់ ណារិន';
-  left4.font = { name: 'Khmer OS Battambang', size: 10, bold: true, color: { argb: 'FF1E293B' } };
-  left4.alignment = { horizontal: 'center', vertical: 'middle' };
+  // Leave left3 and left4 empty for manual teacher signature & name
 
   sheet.mergeCells(`${rightStartColLetter}${r1}:${lastColLetter}${r1}`);
   sheet.mergeCells(`${rightStartColLetter}${r2}:${lastColLetter}${r2}`);
@@ -398,14 +442,11 @@ function appendOfficialSignatures(
   right2.font = { name: 'Khmer OS Muol Light', size: 10, bold: true, color: { argb: 'FF172554' } };
   right2.alignment = { horizontal: 'center', vertical: 'middle' };
 
-  const right3 = sheet.getCell(`${rightStartColLetter}${r3}`);
-  right3.value = '(ត្រាសាលា និងហត្ថលេខា)';
-  right3.font = { name: 'Khmer OS Battambang', size: 9, italic: true, color: { argb: 'FFE11D48' } };
-  right3.alignment = { horizontal: 'center', vertical: 'middle' };
+  // Leave right3 empty for physical stamp & signature
 
   const right4 = sheet.getCell(`${rightStartColLetter}${r4}`);
-  right4.value = 'លោកគ្រូ អ៊ុក សុផល';
-  right4.font = { name: 'Khmer OS Battambang', size: 10, bold: true, color: { argb: 'FF0F172A' } };
+  right4.value = 'លាង បេន';
+  right4.font = { name: 'Khmer OS Muol Light', size: 10, bold: true, color: { argb: 'FF0F172A' } };
   right4.alignment = { horizontal: 'center', vertical: 'middle' };
 }
 

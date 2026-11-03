@@ -63,7 +63,7 @@ const INITIAL_USERS: User[] = [
     id: 'usr-admin',
     username: 'admin',
     password: 'admin123',
-    name: 'រដ្ឋបាលសាលារួម (លោក ស៊ុយ បូរ៉ា)',
+    name: 'រដ្ឋបាលសាលារួម (លោក លាង បេន)',
     role: 'admin',
     email: 'admin@toulsambour.edu.kh',
     phone: '012 888 999',

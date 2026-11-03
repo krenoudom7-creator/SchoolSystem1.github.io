@@ -174,11 +174,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* School Logo Brand Card with Khmer Kbach Gold Frame */}
         <div className="mb-3 p-3.5 bg-gradient-to-br from-slate-800 via-slate-900 to-amber-950/30 rounded-2xl border border-amber-400/45 shadow-md relative overflow-hidden">
           <div className="flex items-center gap-3 relative z-10">
-            <div className="w-12 h-12 rounded-full p-0.5 bg-white border-2 border-amber-400 shadow-sm flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-12 h-12 aspect-square shrink-0 rounded-full p-0.5 bg-white border-2 border-amber-400 shadow-sm flex items-center justify-center flex-shrink-0 overflow-hidden">
               <img
                 src={SCHOOL_LOGO_URL}
                 alt="Logo អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ"
-                className="w-full h-full object-cover scale-[1.38] rounded-full"
+                className="w-full h-full object-contain rounded-full"
               />
             </div>
             <div className="min-w-0 flex-1 py-0.5">

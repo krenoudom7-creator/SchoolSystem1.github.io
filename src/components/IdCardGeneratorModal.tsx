@@ -408,7 +408,7 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
                           <img
                             src={SCHOOL_LOGO_URL}
                             alt="Logo"
-                            className="w-full h-full object-cover scale-[1.38] rounded-full"
+                            className="w-full h-full object-contain rounded-full"
                           />
                         </div>
                         <div className="text-left min-w-0">
@@ -479,12 +479,9 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
 
                         <div className="text-center flex-1 pl-2">
                           <div className="text-[7px] text-slate-500">ទួលសំបួរ, ២០២៥-២០២៦</div>
-                          <div className="h-5 border-b border-rose-400 flex items-center justify-center mx-auto w-20">
-                            <span className="text-[7px] text-rose-700 font-bold tracking-tighter">
-                              [ត្រា និងហត្ថលេខា]
-                            </span>
-                          </div>
-                          <div className="text-[7.5px] text-blue-950 font-bold mt-0.5">នាយកសាលា</div>
+                          <div className="text-[7.5px] text-blue-950 font-bold">នាយកសាលា</div>
+                          <div className="h-4" />
+                          <div className="text-[7.5px] font-moul text-slate-900 font-bold">លាង បេន</div>
                         </div>
                       </div>
                     </div>
@@ -515,7 +512,7 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
                             <img
                               src={SCHOOL_LOGO_URL}
                               alt="Logo"
-                              className="w-full h-full object-cover scale-[1.38] rounded-full"
+                              className="w-full h-full object-contain rounded-full"
                             />
                           </div>
                           <div className="font-bold text-blue-950 text-[9px]">
@@ -578,7 +575,7 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
                         <img
                           src={SCHOOL_LOGO_URL}
                           alt="Logo"
-                          className="w-full h-full object-cover scale-[1.38] rounded-full"
+                          className="w-full h-full object-contain rounded-full"
                         />
                       </div>
                       <div className="min-w-0 flex-1 leading-tight">
@@ -655,12 +652,9 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
                           <div className="w-16 h-16 bg-slate-100 rounded-md animate-pulse"></div>
                         )}
                         <div className="text-center">
-                          <div className="w-14 h-5 border-b border-rose-400 flex items-center justify-center">
-                            <span className="text-[7px] text-rose-700 font-bold tracking-tighter">
-                              [ត្រា និងហត្ថលេខា]
-                            </span>
-                          </div>
-                          <div className="text-[7px] text-slate-500 font-bold mt-0.5">នាយកសាលា</div>
+                          <div className="text-[7px] text-blue-950 font-bold">នាយកសាលា</div>
+                          <div className="h-3" />
+                          <div className="text-[7px] font-moul text-slate-900 font-bold">លាង បេន</div>
                         </div>
                       </div>
                     </div>

@@ -282,7 +282,55 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
     onRefresh();
   };
 
-  const currentResults = storage.getExamResults(selectedExamId, selectedClassId);
+  const savedResults = storage.getExamResults(selectedExamId, selectedClassId);
+
+  const currentResults = React.useMemo(() => {
+    if (savedResults.length > 0) {
+      return savedResults.map((r) => {
+        const s = students.find((item) => item.id === r.studentId);
+        return {
+          ...r,
+          studentCode: s?.studentId || '',
+          studentName: r.studentName || s?.khmerName || '',
+        };
+      });
+    }
+    if (classStudents.length === 0) return [];
+    const subjectMaxMap: Record<string, number> = {};
+    examSubjects.forEach((s) => {
+      subjectMaxMap[s.id] = getSubjectMax(s.id);
+    });
+    const rawData = classStudents.map((s) => ({
+      studentId: s.id,
+      studentName: s.khmerName,
+      scores: draftScores[s.id] || {},
+    }));
+    return calculateRankings(rawData, subjectMaxMap).map((item, idx) => {
+      const stu = classStudents.find((s) => s.id === item.studentId);
+      return {
+        id: `live-${selectedExamId}-${item.studentId}-${idx}`,
+        examId: selectedExamId,
+        classId: selectedClassId,
+        studentId: item.studentId,
+        studentCode: stu?.studentId || '',
+        studentName: item.studentName || stu?.khmerName || '',
+        scores: item.scores,
+        totalScore: item.totalScore,
+        average: item.average,
+        rank: item.rank,
+        gradeLetter: item.gradeLetter,
+        remarks: item.remarks,
+      };
+    });
+  }, [
+    savedResults,
+    classStudents,
+    draftScores,
+    examSubjects,
+    selectedExamId,
+    selectedClassId,
+    students,
+  ]);
 
   // Export to Official Excel (.xlsx)
   const handleExportCsv = async () => {
@@ -290,7 +338,7 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
       const s = students.find((item) => item.id === r.studentId);
       return {
         rank: r.rank,
-        studentCode: s?.studentId || '',
+        studentCode: (r as any).studentCode || s?.studentId || '',
         studentName: r.studentName || s?.khmerName || '',
         totalScore: r.totalScore,
         average: r.average,

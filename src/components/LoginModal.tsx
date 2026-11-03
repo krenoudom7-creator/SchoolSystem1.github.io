@@ -116,11 +116,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
         {/* School Logo & Title */}
         <div className="text-center pb-5 border-b border-slate-100">
-          <div className="w-24 h-24 mx-auto mb-3 p-0.5 rounded-full bg-white shadow-lg border-2 border-amber-400 flex items-center justify-center overflow-hidden">
+          <div className="w-24 h-24 aspect-square shrink-0 mx-auto mb-3 p-0.5 rounded-full bg-white shadow-lg border-2 border-amber-400 flex items-center justify-center overflow-hidden">
             <img
               src={SCHOOL_LOGO_URL}
               alt="Logo អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ"
-              className="w-full h-full object-cover scale-[1.38] rounded-full"
+              className="w-full h-full object-contain rounded-full"
             />
           </div>
           <h2 className="font-moul text-base text-blue-950 font-bold">

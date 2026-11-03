@@ -258,6 +258,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <Mail className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    <span className="truncate">{t.email || '—'}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                     <span>ចូលបម្រើការងារ: {t.joinDate}</span>
                   </div>
@@ -281,11 +286,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
       {/* Add / Edit Modal */}
       {(isAddModalOpen || editingTeacher) && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-in fade-in my-8">
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-in fade-in my-6">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold font-moul text-slate-900">
-                {editingTeacher ? 'កែប្រែព័ត៌មានគ្រូ' : 'បន្ថែមគ្រូបង្រៀនថ្មី'}
+              <h3 className="text-sm font-bold font-moul text-slate-900 leading-[1.9]">
+                {editingTeacher ? 'កែប្រែព័ត៌មានគ្រូបង្រៀន' : 'បន្ថែមគ្រូបង្រៀនថ្មី'}
               </h3>
               <button
                 onClick={() => {
@@ -299,15 +304,32 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             </div>
 
             <form onSubmit={handleSave} className="space-y-3 mt-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">អត្តលេខគ្រូ *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.teacherId}
-                  onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
-                  className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden font-mono"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">អត្តលេខគ្រូ *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.teacherId}
+                    onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">ស្ថានភាពការងារ</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData({ ...formData, status: e.target.value as TeacherStatus })
+                    }
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
+                  >
+                    <option value="កំពុងបង្រៀន">កំពុងបង្រៀន</option>
+                    <option value="ច្បាប់សម្រាក">ច្បាប់សម្រាក</option>
+                    <option value="ឈប់សម្រាក">ឈប់សម្រាក</option>
+                  </select>
+                </div>
               </div>
 
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -356,37 +378,94 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  មុខវិជ្ជាបង្រៀន (ក្បៀសបំបែក)
-                </label>
-                <input
-                  type="text"
-                  value={formData.subjects.join(', ')}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      subjects: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
-                    })
-                  }
-                  className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
-                />
+              {/* Editable Email & Join Date */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    អ៊ីមែល (Email)
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="teacher@toulsambour.edu.kh"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    ចូលបម្រើការងារ (ថ្ងៃខែឆ្នាំ)
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.joinDate}
+                    onChange={(e) => setFormData({ ...formData, joinDate: e.target.value })}
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">ថ្នាក់ទទួលខុសត្រូវ (ប្រចាំថ្នាក់)</label>
-                <select
-                  value={formData.assignedClassId}
-                  onChange={(e) => setFormData({ ...formData, assignedClassId: e.target.value })}
-                  className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
-                >
-                  <option value="">គ្មាន (បង្រៀនមុខវិជ្ជាទូទៅ)</option>
-                  {classes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    មុខវិជ្ជាបង្រៀន (ក្បៀសបំបែក)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.subjects.join(', ')}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        subjects: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
+                      })
+                    }
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    សញ្ញាបត្រ / កម្រិតវប្បធម៌
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ឧទាហរណ៍៖ បរិញ្ញាបត្រអប់រំ"
+                    value={formData.degree}
+                    onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    ថ្នាក់ទទួលខុសត្រូវ (ប្រចាំថ្នាក់)
+                  </label>
+                  <select
+                    value={formData.assignedClassId}
+                    onChange={(e) => setFormData({ ...formData, assignedClassId: e.target.value })}
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
+                  >
+                    <option value="">គ្មាន (បង្រៀនមុខវិជ្ជាទូទៅ)</option>
+                    {classes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">អាសយដ្ឋាន</label>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -404,7 +483,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   type="submit"
                   className="px-5 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-xs cursor-pointer"
                 >
-                  {editingTeacher ? 'កែប្រែ' : 'រក្សាទុក'}
+                  {editingTeacher ? 'រក្សាទុកការកែប្រែ' : 'រក្សាទុក'}
                 </button>
               </div>
             </form>
@@ -448,6 +527,10 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                 <span>{viewingTeacher.email}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-slate-400">ចូលបម្រើការងារ៖</span>
+                <span className="font-mono">{viewingTeacher.joinDate}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-slate-400">សញ្ញាបត្រ៖</span>
                 <span>{viewingTeacher.degree}</span>
               </div>
@@ -456,8 +539,21 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                 <span className="text-right">{viewingTeacher.address}</span>
               </div>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end gap-2">
               <button
+                type="button"
+                onClick={() => {
+                  const t = viewingTeacher;
+                  setViewingTeacher(null);
+                  handleOpenEdit(t);
+                }}
+                className="px-4 py-2 text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 rounded-xl hover:bg-amber-100 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Edit className="w-3.5 h-3.5 text-amber-700" />
+                <span>កែប្រែព័ត៌មាន</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setViewingTeacher(null)}
                 className="px-4 py-2 text-xs font-semibold bg-blue-900 text-white rounded-xl hover:bg-blue-800 cursor-pointer"
               >

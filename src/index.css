@@ -282,8 +282,9 @@ p.font-moul {
     max-height: none !important;
     height: auto !important;
     overflow: visible !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    margin: 0 auto !important;
+    padding: 8mm 10mm !important;
+    box-sizing: border-box !important;
     box-shadow: none !important;
     border: none !important;
   }
@@ -322,7 +323,7 @@ p.font-moul {
   /* 5. A4 Page format & clean margins */
   @page {
     size: A4 portrait;
-    margin: 1cm 0.8cm 1cm 0.8cm;
+    margin: 8mm 10mm 8mm 10mm;
   }
 
   /* 6. Ensure high-fidelity color printing for school seal and official stamps */

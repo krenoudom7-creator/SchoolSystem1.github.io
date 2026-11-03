@@ -80,11 +80,11 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between min-h-[78px] py-2.5 gap-3">
           {/* Brand & Subtitle */}
           <div className="flex items-center space-x-3.5 min-w-0">
-            <div className="w-13 h-13 rounded-full p-0.5 bg-white border-2 border-amber-400 ring-2 ring-amber-200/70 shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+            <div className="w-13 h-13 aspect-square shrink-0 rounded-full p-0.5 bg-white border-2 border-amber-400 ring-2 ring-amber-200/70 shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               <img
                 src={SCHOOL_LOGO_URL}
                 alt="Logo អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ"
-                className="w-full h-full object-cover scale-[1.38] rounded-full"
+                className="w-full h-full object-contain rounded-full"
               />
             </div>
             <div className="min-w-0 py-0.5">

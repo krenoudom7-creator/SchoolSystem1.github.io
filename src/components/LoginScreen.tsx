@@ -116,11 +116,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             <div className="text-[11px] font-bold text-amber-800 tracking-wide mb-2">
               ព្រះរាជាណាចក្រកម្ពុជា · ជាតិ សាសនា ព្រះមហាក្សត្រ
             </div>
-            <div className="w-24 h-24 mx-auto mb-3.5 p-0.5 rounded-full bg-white shadow-xl border-2 border-amber-400 ring-4 ring-amber-100 flex items-center justify-center overflow-hidden">
+            <div className="w-24 h-24 aspect-square shrink-0 mx-auto mb-3.5 p-0.5 rounded-full bg-white shadow-xl border-2 border-amber-400 ring-4 ring-amber-100 flex items-center justify-center overflow-hidden">
               <img
                 src={SCHOOL_LOGO_URL}
                 alt="Logo អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ"
-                className="w-full h-full object-cover scale-[1.38] rounded-full"
+                className="w-full h-full object-contain rounded-full"
               />
             </div>
             <div className="inline-block px-2.5 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200 rounded-full mb-1.5">

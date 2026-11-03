@@ -198,7 +198,7 @@ export const StudyCertificateModal: React.FC<StudyCertificateModalProps> = ({
           className="flex-1 overflow-y-auto py-4 bg-slate-100 rounded-2xl flex justify-center print:bg-white print:p-0 print:overflow-visible"
         >
           <div
-            className="w-[210mm] min-h-[297mm] bg-white p-12 sm:p-14 shadow-lg border border-slate-300 print:border-none print:shadow-none print:p-8 flex flex-col justify-between text-slate-900 relative"
+            className="w-[210mm] min-h-[297mm] bg-white p-12 sm:p-14 shadow-lg border border-slate-300 print:w-full print:min-h-0 print:border-none print:shadow-none print:p-2 flex flex-col justify-between text-slate-900 relative"
             style={{ boxSizing: 'border-box' }}
           >
             {/* National Motto Header */}
@@ -354,19 +354,12 @@ export const StudyCertificateModal: React.FC<StudyCertificateModalProps> = ({
                 <div className="font-medium text-slate-700">
                   ទួលសំបួរ, ថ្ងៃទី {dayKh} ខែ {monthKh} ឆ្នាំ {yearKh}
                 </div>
-                <div className="font-moul text-xs text-blue-950 font-bold">
-                  នាយកអនុវិទ្យាល័យ
+                <div className="font-moul text-xs text-blue-950 font-bold leading-[1.9]">
+                  នាយកសាលា អនុវិទ្យាល័យទួលសំបួរ
                 </div>
-                {/* Official Circular Stamp Simulation */}
-                <div className="h-20 flex items-center justify-center relative">
-                  <div className="w-20 h-20 rounded-full border-2 border-rose-600/40 text-rose-700 flex flex-col items-center justify-center text-[7px] font-bold rotate-[-12deg] p-1 shadow-2xs">
-                    <span>* ព្រះរាជាណាចក្រកម្ពុជា *</span>
-                    <span className="text-[8px] my-0.5">អនុវិទ្យាល័យ</span>
-                    <span>ហ៊ុន សែន ទួលសំបួរ</span>
-                  </div>
-                </div>
-                <div className="font-moul text-xs text-slate-900 font-bold underline">
-                  ស៊ុយ បូរ៉ា
+                <div className="h-20"></div>
+                <div className="font-moul text-xs text-slate-900 font-bold leading-[1.9]">
+                  លាង បេន
                 </div>
               </div>
             </div>
