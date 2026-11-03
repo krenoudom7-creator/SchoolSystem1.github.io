@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDocs,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -41,7 +42,11 @@ export function startFirestoreSync(callbacks: SyncCallback): () => void {
       (snapshot) => {
         const remoteStudents: Student[] = [];
         snapshot.forEach((docSnap) => {
-          remoteStudents.push(docSnap.data() as Student);
+          const data = docSnap.data() as Student;
+          remoteStudents.push({
+            ...data,
+            id: data.id || docSnap.id,
+          });
         });
         callbacks.onStudentsChange?.(remoteStudents);
       },
@@ -57,7 +62,11 @@ export function startFirestoreSync(callbacks: SyncCallback): () => void {
       (snapshot) => {
         const remoteTeachers: Teacher[] = [];
         snapshot.forEach((docSnap) => {
-          remoteTeachers.push(docSnap.data() as Teacher);
+          const data = docSnap.data() as Teacher;
+          remoteTeachers.push({
+            ...data,
+            id: data.id || docSnap.id,
+          });
         });
         callbacks.onTeachersChange?.(remoteTeachers);
       },
@@ -73,7 +82,11 @@ export function startFirestoreSync(callbacks: SyncCallback): () => void {
       (snapshot) => {
         const remoteClasses: SchoolClass[] = [];
         snapshot.forEach((docSnap) => {
-          remoteClasses.push(docSnap.data() as SchoolClass);
+          const data = docSnap.data() as SchoolClass;
+          remoteClasses.push({
+            ...data,
+            id: data.id || docSnap.id,
+          });
         });
         callbacks.onClassesChange?.(remoteClasses);
       },
@@ -89,7 +102,11 @@ export function startFirestoreSync(callbacks: SyncCallback): () => void {
       (snapshot) => {
         const records: AttendanceRecord[] = [];
         snapshot.forEach((docSnap) => {
-          records.push(docSnap.data() as AttendanceRecord);
+          const data = docSnap.data() as AttendanceRecord;
+          records.push({
+            ...data,
+            id: data.id || docSnap.id,
+          });
         });
         callbacks.onAttendanceChange?.(records);
       },
@@ -105,7 +122,11 @@ export function startFirestoreSync(callbacks: SyncCallback): () => void {
       (snapshot) => {
         const results: ExamResult[] = [];
         snapshot.forEach((docSnap) => {
-          results.push(docSnap.data() as ExamResult);
+          const data = docSnap.data() as ExamResult;
+          results.push({
+            ...data,
+            id: data.id || docSnap.id,
+          });
         });
         callbacks.onExamResultsChange?.(results);
       },
@@ -121,7 +142,11 @@ export function startFirestoreSync(callbacks: SyncCallback): () => void {
       (snapshot) => {
         const users: User[] = [];
         snapshot.forEach((docSnap) => {
-          users.push(docSnap.data() as User);
+          const data = docSnap.data() as User;
+          users.push({
+            ...data,
+            id: data.id || docSnap.id,
+          });
         });
         if (users.length > 0) {
           callbacks.onUsersChange?.(users);
@@ -188,11 +213,40 @@ export async function syncStudentToCloud(student: Student): Promise<void> {
   }
 }
 
-export async function removeStudentFromCloud(studentId: string): Promise<void> {
+export async function removeStudentFromCloud(
+  studentId: string,
+  studentCode?: string,
+  khmerName?: string
+): Promise<void> {
   const safeId = toSafeFirestoreId(studentId, 'stu');
   const path = `students/${safeId}`;
   try {
     await deleteDoc(doc(db, 'students', safeId));
+    if (studentId && studentId !== safeId) {
+      await deleteDoc(doc(db, 'students', studentId)).catch(() => {});
+    }
+    // Also clean up any duplicate/legacy documents in Firestore matching this student
+    const snap = await getDocs(collection(db, 'students'));
+    const deletions: Promise<void>[] = [];
+    snap.forEach((d) => {
+      const data = d.data();
+      const matchById =
+        d.id === studentId ||
+        d.id === safeId ||
+        data?.id === studentId ||
+        data?.id === safeId;
+      const matchByCodeAndName =
+        studentCode &&
+        khmerName &&
+        String(data?.studentId || '').trim() === studentCode.trim() &&
+        String(data?.khmerName || '').trim() === khmerName.trim();
+      if (matchById || matchByCodeAndName) {
+        deletions.push(deleteDoc(doc(db, 'students', d.id)));
+      }
+    });
+    if (deletions.length > 0) {
+      await Promise.allSettled(deletions);
+    }
   } catch (error: any) {
     if (error?.code === 'permission-denied' || error?.message?.includes('insufficient permissions')) {
       console.warn(`Cloud delete skipped for ${path} (unauthenticated session): local deletion persisted.`);
@@ -213,11 +267,31 @@ export async function syncTeacherToCloud(teacher: Teacher): Promise<void> {
   }
 }
 
-export async function removeTeacherFromCloud(teacherId: string): Promise<void> {
+export async function removeTeacherFromCloud(teacherId: string, teacherCode?: string): Promise<void> {
   const safeId = toSafeFirestoreId(teacherId, 'tch');
   const path = `teachers/${safeId}`;
   try {
     await deleteDoc(doc(db, 'teachers', safeId));
+    if (teacherId && teacherId !== safeId) {
+      await deleteDoc(doc(db, 'teachers', teacherId)).catch(() => {});
+    }
+    const snap = await getDocs(collection(db, 'teachers'));
+    const deletions: Promise<void>[] = [];
+    snap.forEach((d) => {
+      const data = d.data();
+      if (
+        d.id === teacherId ||
+        d.id === safeId ||
+        data?.id === teacherId ||
+        data?.id === safeId ||
+        (teacherCode && data?.teacherId === teacherCode)
+      ) {
+        deletions.push(deleteDoc(doc(db, 'teachers', d.id)));
+      }
+    });
+    if (deletions.length > 0) {
+      await Promise.allSettled(deletions);
+    }
   } catch (error: any) {
     if (error?.code === 'permission-denied' || error?.message?.includes('insufficient permissions')) {
       console.warn(`Cloud delete skipped for ${path} (unauthenticated session): local deletion persisted.`);
@@ -238,11 +312,33 @@ export async function syncClassToCloud(cls: SchoolClass): Promise<void> {
   }
 }
 
-export async function removeClassFromCloud(classId: string): Promise<void> {
+export async function removeClassFromCloud(classId: string, className?: string): Promise<void> {
   const safeId = toSafeFirestoreId(classId, 'cls');
   const path = `classes/${safeId}`;
+  const normTargetName = className ? className.trim().replace(/\s+/g, ' ') : '';
   try {
     await deleteDoc(doc(db, 'classes', safeId));
+    if (classId && classId !== safeId) {
+      await deleteDoc(doc(db, 'classes', classId)).catch(() => {});
+    }
+    const snap = await getDocs(collection(db, 'classes'));
+    const deletions: Promise<void>[] = [];
+    snap.forEach((d) => {
+      const data = d.data();
+      const docNormName = String(data?.name || '').trim().replace(/\s+/g, ' ');
+      if (
+        d.id === classId ||
+        d.id === safeId ||
+        data?.id === classId ||
+        data?.id === safeId ||
+        (normTargetName && docNormName === normTargetName)
+      ) {
+        deletions.push(deleteDoc(doc(db, 'classes', d.id)));
+      }
+    });
+    if (deletions.length > 0) {
+      await Promise.allSettled(deletions);
+    }
   } catch (error: any) {
     if (error?.code === 'permission-denied' || error?.message?.includes('insufficient permissions')) {
       console.warn(`Cloud delete skipped for ${path} (unauthenticated session): local deletion persisted.`);

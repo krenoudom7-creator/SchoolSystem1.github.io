@@ -56,6 +56,7 @@ export interface SchoolDatabase {
     chatId: string;
     isEnabled: boolean;
   };
+  deletedIds?: string[];
 }
 
 const INITIAL_USERS: User[] = [
@@ -393,6 +394,9 @@ const INITIAL_BEHAVIOR_RECORDS: StudentBehaviorRecord[] = [
 class StorageService {
   private db: SchoolDatabase;
   private listeners: Array<() => void> = [];
+  private knownRemoteStudentIds = new Set<string>();
+  private knownRemoteClassIds = new Set<string>();
+  private knownRemoteTeacherIds = new Set<string>();
 
   constructor() {
     this.db = this.loadDatabase();
@@ -400,8 +404,107 @@ class StorageService {
     this.initCloudSync();
   }
 
+  private getDeletedSet(): Set<string> {
+    if (!Array.isArray(this.db.deletedIds)) {
+      this.db.deletedIds = [];
+    }
+    return new Set(this.db.deletedIds);
+  }
+
+  private markDeleted(keys: Array<string | undefined | null>): void {
+    const set = this.getDeletedSet();
+    for (const k of keys) {
+      if (k && String(k).trim()) {
+        set.add(String(k).trim());
+      }
+    }
+    this.db.deletedIds = Array.from(set);
+  }
+
+  private unmarkDeleted(keys: Array<string | undefined | null>): void {
+    const set = this.getDeletedSet();
+    for (const k of keys) {
+      if (k && String(k).trim()) {
+        set.delete(String(k).trim());
+      }
+    }
+    this.db.deletedIds = Array.from(set);
+  }
+
+  private getStudentDeleteKeys(s: Partial<Student>): string[] {
+    const keys: string[] = [];
+    if (s.id) {
+      keys.push(s.id);
+      keys.push(toSafeFirestoreId(s.id, 'stu'));
+    }
+    const code = (s.studentId || '').trim();
+    const name = (s.khmerName || '').trim();
+    if (code || name) {
+      keys.push(`stu_key:${code}_${name}`);
+    }
+    return keys;
+  }
+
+  private getClassDeleteKeys(c: Partial<SchoolClass>): string[] {
+    const keys: string[] = [];
+    if (c.id) {
+      keys.push(c.id);
+      keys.push(toSafeFirestoreId(c.id, 'cls'));
+    }
+    const normName = (c.name || '').trim().replace(/\s+/g, ' ');
+    if (normName) {
+      keys.push(`cls_name:${normName}`);
+    }
+    return keys;
+  }
+
+  private getTeacherDeleteKeys(t: Partial<Teacher>): string[] {
+    const keys: string[] = [];
+    if (t.id) {
+      keys.push(t.id);
+      keys.push(toSafeFirestoreId(t.id, 'tch'));
+    }
+    const code = (t.teacherId || '').trim();
+    const name = (t.name || '').trim();
+    if (code || name) {
+      keys.push(`tch_key:${code}_${name}`);
+    }
+    return keys;
+  }
+
+  private isStudentDeleted(s: Partial<Student>): boolean {
+    const set = this.getDeletedSet();
+    return this.getStudentDeleteKeys(s).some((k) => set.has(k));
+  }
+
+  private isClassDeleted(c: Partial<SchoolClass>): boolean {
+    const set = this.getDeletedSet();
+    return this.getClassDeleteKeys(c).some((k) => set.has(k));
+  }
+
+  private isTeacherDeleted(t: Partial<Teacher>): boolean {
+    const set = this.getDeletedSet();
+    return this.getTeacherDeleteKeys(t).some((k) => set.has(k));
+  }
+
   private reconcileClassesAndStudents(syncRepairsToCloud = false): void {
     if (!this.db.classes || !this.db.students) return;
+
+    // 0. Strip any items that have been marked as deleted
+    this.db.classes = this.db.classes.filter((c) => !this.isClassDeleted(c));
+    this.db.students = this.db.students.filter((s) => !this.isStudentDeleted(s));
+    if (this.db.teachers) {
+      this.db.teachers = this.db.teachers.filter((t) => !this.isTeacherDeleted(t));
+    }
+
+    // Ensure every student has a non-empty unique id
+    const seenStudentIds = new Set<string>();
+    this.db.students.forEach((s, idx) => {
+      if (!s.id || seenStudentIds.has(s.id)) {
+        s.id = `stu-${Date.now()}-${idx}`;
+      }
+      seenStudentIds.add(s.id);
+    });
 
     // 1. Merge duplicate classes that have the exact same normalized name (e.g. two "ថ្នាក់ទី ៧ គ" classes)
     const nameMap = new Map<string, SchoolClass>();
@@ -554,6 +657,7 @@ class StorageService {
           teachers: this.db.teachers,
           examResults: this.db.examResults,
           users: this.db.users,
+          deletedIds: this.db.deletedIds || [],
         }),
       })
       .catch(() => {});
@@ -569,11 +673,26 @@ class StorageService {
         const st = data.state;
         let changed = false;
 
+        if (Array.isArray(st.deletedIds) && st.deletedIds.length > 0) {
+          const prevCount = (this.db.deletedIds || []).length;
+          this.markDeleted(st.deletedIds);
+          if ((this.db.deletedIds || []).length !== prevCount) {
+            this.reconcileClassesAndStudents(false);
+            changed = true;
+          }
+        }
+
         if (Array.isArray(st.attendanceRecords) && st.attendanceRecords.length > 0) {
+          const deletedSet = this.getDeletedSet();
           const map = new Map<string, AttendanceRecord>();
-          this.db.attendanceRecords.forEach((r) => map.set(r.id, r));
+          this.db.attendanceRecords.forEach((r) => {
+            if (!deletedSet.has(r.id) && !deletedSet.has(r.studentId)) {
+              map.set(r.id, r);
+            }
+          });
           let addedOrUpdated = false;
           st.attendanceRecords.forEach((r: AttendanceRecord) => {
+            if (deletedSet.has(r.id) || deletedSet.has(r.studentId)) return;
             const existing = map.get(r.id);
             if (!existing || existing.status !== r.status || existing.reason !== r.reason) {
               map.set(r.id, r);
@@ -614,10 +733,14 @@ class StorageService {
         syncAttendanceRecordToCloud(rec).catch(() => {});
       });
       this.db.students?.forEach((stu) => {
-        syncStudentToCloud(stu).catch(() => {});
+        if (!this.isStudentDeleted(stu)) {
+          syncStudentToCloud(stu).catch(() => {});
+        }
       });
       this.db.classes?.forEach((cls) => {
-        syncClassToCloud(cls).catch(() => {});
+        if (!this.isClassDeleted(cls)) {
+          syncClassToCloud(cls).catch(() => {});
+        }
       });
       this.pushSharedStateToServer();
       this.pullSharedStateFromServer();
@@ -643,43 +766,114 @@ class StorageService {
       this.pullSharedStateFromServer();
     }, 4000);
 
-    // 3. Real-time Firestore listeners with non-destructive merge
+    // 3. Real-time Firestore listeners with tombstone enforcement (deleted items never resurrect)
     try {
       startFirestoreSync({
         onStudentsChange: (remote) => {
-          if (remote && Array.isArray(remote) && remote.length > 0) {
+          if (remote && Array.isArray(remote)) {
+            const validRemote: Student[] = [];
+            const currentRemoteIds = new Set<string>();
+
+            remote.forEach((s) => {
+              if (this.isStudentDeleted(s)) {
+                // Purge ghost deleted student from Firestore
+                removeStudentFromCloud(s.id, s.studentId, s.khmerName).catch(() => {});
+              } else {
+                validRemote.push(s);
+                currentRemoteIds.add(s.id);
+              }
+            });
+
+            // Remove any local student that was previously in remote and has now been deleted remotely
             const map = new Map<string, Student>();
-            this.db.students.forEach((s) => map.set(s.id, s));
-            remote.forEach((s) => map.set(s.id, s));
+            this.db.students.forEach((s) => {
+              if (!this.isStudentDeleted(s) && (!this.knownRemoteStudentIds.has(s.id) || currentRemoteIds.has(s.id))) {
+                map.set(s.id, s);
+              }
+            });
+            validRemote.forEach((s) => {
+              map.set(s.id, s);
+              this.knownRemoteStudentIds.add(s.id);
+            });
+
             this.db.students = Array.from(map.values());
             this.reconcileClassesAndStudents(false);
             this.saveLocalOnly(this.db);
           }
         },
         onTeachersChange: (remote) => {
-          if (remote && Array.isArray(remote) && remote.length > 0) {
+          if (remote && Array.isArray(remote)) {
+            const validRemote: Teacher[] = [];
+            const currentRemoteIds = new Set<string>();
+
+            remote.forEach((t) => {
+              if (this.isTeacherDeleted(t)) {
+                removeTeacherFromCloud(t.id, t.teacherId).catch(() => {});
+              } else {
+                validRemote.push(t);
+                currentRemoteIds.add(t.id);
+              }
+            });
+
             const map = new Map<string, Teacher>();
-            this.db.teachers.forEach((t) => map.set(t.id, t));
-            remote.forEach((t) => map.set(t.id, t));
-            this.db.teachers = Array.from(map.values());
-            this.saveLocalOnly(this.db);
+            this.db.teachers.forEach((t) => {
+              if (!this.isTeacherDeleted(t) && (!this.knownRemoteTeacherIds.has(t.id) || currentRemoteIds.has(t.id))) {
+                map.set(t.id, t);
+              }
+            });
+            validRemote.forEach((t) => {
+              map.set(t.id, t);
+              this.knownRemoteTeacherIds.add(t.id);
+            });
+
+            if (map.size > 0 || remote.length === 0) {
+              this.db.teachers = Array.from(map.values());
+              this.saveLocalOnly(this.db);
+            }
           }
         },
         onClassesChange: (remote) => {
-          if (remote && Array.isArray(remote) && remote.length > 0) {
+          if (remote && Array.isArray(remote)) {
+            const validRemote: SchoolClass[] = [];
+            const currentRemoteIds = new Set<string>();
+
+            remote.forEach((c) => {
+              if (this.isClassDeleted(c)) {
+                // Purge ghost deleted class from Firestore
+                removeClassFromCloud(c.id, c.name).catch(() => {});
+              } else {
+                validRemote.push(c);
+                currentRemoteIds.add(c.id);
+              }
+            });
+
             const map = new Map<string, SchoolClass>();
-            this.db.classes.forEach((c) => map.set(c.id, c));
-            remote.forEach((c) => map.set(c.id, c));
+            this.db.classes.forEach((c) => {
+              if (!this.isClassDeleted(c) && (!this.knownRemoteClassIds.has(c.id) || currentRemoteIds.has(c.id))) {
+                map.set(c.id, c);
+              }
+            });
+            validRemote.forEach((c) => {
+              map.set(c.id, c);
+              this.knownRemoteClassIds.add(c.id);
+            });
+
             this.db.classes = Array.from(map.values());
-            this.reconcileClassesAndStudents(true);
+            this.reconcileClassesAndStudents(false);
             this.saveLocalOnly(this.db);
           }
         },
         onAttendanceChange: (remote) => {
           if (remote && Array.isArray(remote)) {
-            const remoteIds = new Set(remote.map((r) => r.id));
+            const deletedSet = this.getDeletedSet();
+            const validRemote = remote.filter(
+              (r) => !deletedSet.has(r.id) && !deletedSet.has(r.studentId)
+            );
+            const remoteIds = new Set(validRemote.map((r) => r.id));
+
             // Push any local attendance records that aren't in Firestore yet
             this.db.attendanceRecords.forEach((localRec) => {
+              if (deletedSet.has(localRec.id) || deletedSet.has(localRec.studentId)) return;
               const safeId = toSafeFirestoreId(localRec.id, 'att');
               if (!remoteIds.has(localRec.id) && !remoteIds.has(safeId)) {
                 syncAttendanceRecordToCloud(localRec).catch(() => {});
@@ -689,10 +883,11 @@ class StorageService {
             // Merge remote + local attendance records (remote wins on matching ID/student+date+session)
             const mergedMap = new Map<string, AttendanceRecord>();
             this.db.attendanceRecords.forEach((r) => {
+              if (deletedSet.has(r.id) || deletedSet.has(r.studentId)) return;
               const key = `${r.classId}_${r.date}_${r.sessionId}_${r.studentId}`;
               mergedMap.set(key, r);
             });
-            remote.forEach((r) => {
+            validRemote.forEach((r) => {
               const key = `${r.classId}_${r.date}_${r.sessionId}_${r.studentId}`;
               mergedMap.set(key, r);
             });
@@ -704,9 +899,14 @@ class StorageService {
         },
         onExamResultsChange: (remote) => {
           if (remote && Array.isArray(remote) && remote.length > 0) {
+            const deletedSet = this.getDeletedSet();
             const map = new Map<string, ExamResult>();
-            this.db.examResults.forEach((r) => map.set(r.id, r));
-            remote.forEach((r) => map.set(r.id, r));
+            this.db.examResults.forEach((r) => {
+              if (!deletedSet.has(r.studentId)) map.set(r.id, r);
+            });
+            remote.forEach((r) => {
+              if (!deletedSet.has(r.studentId)) map.set(r.id, r);
+            });
             this.db.examResults = Array.from(map.values());
             this.saveLocalOnly(this.db);
           }
@@ -752,6 +952,9 @@ class StorageService {
           const parsed: SchoolDatabase = JSON.parse(stored);
           const accessCode = parsed.systemAccessCode || 'admin123';
           parsed.systemAccessCode = accessCode;
+          if (!Array.isArray(parsed.deletedIds)) {
+            parsed.deletedIds = [];
+          }
           if (parsed.users) {
             parsed.users = parsed.users.map((u) => ({
               ...u,
@@ -803,6 +1006,7 @@ class StorageService {
         chatId: '',
         isEnabled: true,
       },
+      deletedIds: [],
     };
 
     this.saveDatabase(initialDb);
@@ -888,7 +1092,7 @@ class StorageService {
 
   // Students
   public getStudents(classId?: string, query?: string): Student[] {
-    let list = this.db.students;
+    let list = this.db.students.filter((s) => !this.isStudentDeleted(s));
     if (classId && classId !== 'all') {
       list = list.filter((s) => s.classId === classId);
     }
@@ -896,11 +1100,11 @@ class StorageService {
       const q = query.toLowerCase().trim();
       list = list.filter(
         (s) =>
-          s.khmerName.toLowerCase().includes(q) ||
-          s.latinName.toLowerCase().includes(q) ||
-          s.studentId.toLowerCase().includes(q) ||
-          s.parentName.toLowerCase().includes(q) ||
-          s.parentPhone.includes(q)
+          (s.khmerName || '').toLowerCase().includes(q) ||
+          (s.latinName || '').toLowerCase().includes(q) ||
+          (s.studentId || '').toLowerCase().includes(q) ||
+          (s.parentName || '').toLowerCase().includes(q) ||
+          (s.parentPhone || '').includes(q)
       );
     }
     return list;
@@ -915,6 +1119,7 @@ class StorageService {
       ...studentData,
       id: `stu-${Date.now()}`,
     };
+    this.unmarkDeleted(this.getStudentDeleteKeys(newStudent));
     this.db.students.push(newStudent);
 
     this.logAudit(actorName, 'admin', 'បន្ថែមសិស្សថ្មី', `បន្ថែមសិស្ស ${newStudent.khmerName} (${newStudent.studentId})`);
@@ -934,16 +1139,72 @@ class StorageService {
     return true;
   }
 
-  public deleteStudent(id: string, actorName = 'Admin'): boolean {
-    const student = this.db.students.find((s) => s.id === id || s.studentId === id);
-    if (!student) return false;
+  public deleteStudent(
+    id: string,
+    actorName = 'Admin',
+    fallbackCode?: string,
+    fallbackName?: string
+  ): boolean {
+    const codeNorm = (fallbackCode || '').trim();
+    const nameNorm = (fallbackName || '').trim();
+    const student = this.db.students.find(
+      (s) =>
+        s.id === id ||
+        s.studentId === id ||
+        (codeNorm && nameNorm && String(s.studentId || '').trim() === codeNorm && String(s.khmerName || '').trim() === nameNorm) ||
+        (nameNorm && !codeNorm && String(s.khmerName || '').trim() === nameNorm)
+    );
 
-    this.db.students = this.db.students.filter((s) => s.id !== id && s.studentId !== id);
+    const targetId = student?.id || id;
+    const targetCode = (student?.studentId ?? fallbackCode ?? '').trim();
+    const targetName = (student?.khmerName ?? fallbackName ?? '').trim();
 
-    this.logAudit(actorName, 'admin', 'លុបសិស្ស', `លុបសិស្ស ${student.khmerName} (${student.studentId})`);
+    const deleteKeys = this.getStudentDeleteKeys({
+      id: targetId,
+      studentId: targetCode,
+      khmerName: targetName,
+    });
+    if (id) deleteKeys.push(id);
+    this.markDeleted(deleteKeys);
+    this.knownRemoteStudentIds.delete(targetId);
+    if (id) this.knownRemoteStudentIds.delete(id);
+
+    const beforeLen = this.db.students.length;
+    this.db.students = this.db.students.filter(
+      (s) =>
+        s.id !== targetId &&
+        s.id !== id &&
+        !this.isStudentDeleted(s) &&
+        !(
+          (targetCode || targetName) &&
+          String(s.studentId || '').trim() === targetCode &&
+          String(s.khmerName || '').trim() === targetName
+        )
+    );
+
+    // Also remove attendance records & exam results belonging to this deleted student
+    const attToRemove = (this.db.attendanceRecords || []).filter(
+      (r) => r.studentId === targetId || r.studentId === id
+    );
+    this.db.attendanceRecords = (this.db.attendanceRecords || []).filter(
+      (r) => r.studentId !== targetId && r.studentId !== id
+    );
+    attToRemove.forEach((r) => {
+      this.markDeleted([r.id]);
+      removeAttendanceRecordFromCloud(r.id).catch(() => {});
+    });
+
+    this.db.examResults = (this.db.examResults || []).filter(
+      (r) => r.studentId !== targetId && r.studentId !== id
+    );
+
+    removeStudentFromCloud(targetId, targetCode, targetName).catch((e) =>
+      console.warn('Cloud sync delete error:', e)
+    );
+
+    this.logAudit(actorName, 'admin', 'លុបសិស្ស', `លុបសិស្ស ${targetName || targetId} (${targetCode})`);
     this.saveDatabase(this.db);
-    removeStudentFromCloud(student.id).catch((e) => console.warn('Cloud sync delete error:', e));
-    return true;
+    return this.db.students.length < beforeLen || Boolean(student);
   }
 
   public bulkDeleteStudents(ids: string[], actorName = 'Admin'): number {
@@ -952,7 +1213,28 @@ class StorageService {
     const toDelete = this.db.students.filter((s) => idsSet.has(s.id) || idsSet.has(s.studentId));
     if (toDelete.length === 0) return 0;
 
-    this.db.students = this.db.students.filter((s) => !idsSet.has(s.id) && !idsSet.has(s.studentId));
+    toDelete.forEach((s) => {
+      this.markDeleted(this.getStudentDeleteKeys(s));
+      this.knownRemoteStudentIds.delete(s.id);
+    });
+
+    const deletedIdSet = new Set(toDelete.map((s) => s.id));
+    this.db.students = this.db.students.filter((s) => !idsSet.has(s.id) && !idsSet.has(s.studentId) && !this.isStudentDeleted(s));
+
+    // Clean up attendance records & exam results for bulk-deleted students
+    const attToRemove = (this.db.attendanceRecords || []).filter((r) => deletedIdSet.has(r.studentId));
+    this.db.attendanceRecords = (this.db.attendanceRecords || []).filter((r) => !deletedIdSet.has(r.studentId));
+    attToRemove.forEach((r) => {
+      this.markDeleted([r.id]);
+      removeAttendanceRecordFromCloud(r.id).catch(() => {});
+    });
+    this.db.examResults = (this.db.examResults || []).filter((r) => !deletedIdSet.has(r.studentId));
+
+    toDelete.forEach((s) => {
+      removeStudentFromCloud(s.id, s.studentId, s.khmerName).catch((e) =>
+        console.warn('Cloud sync bulk delete error:', e)
+      );
+    });
 
     this.logAudit(
       actorName,
@@ -962,16 +1244,12 @@ class StorageService {
     );
     this.saveDatabase(this.db);
 
-    toDelete.forEach((s) => {
-      removeStudentFromCloud(s.id).catch((e) => console.warn('Cloud sync bulk delete error:', e));
-    });
-
     return toDelete.length;
   }
 
   // Teachers
   public getTeachers(): Teacher[] {
-    return this.db.teachers;
+    return (this.db.teachers || []).filter((t) => !this.isTeacherDeleted(t));
   }
 
   public addTeacher(teacherData: Omit<Teacher, 'id'>, actorName = 'Admin'): Teacher {
@@ -979,6 +1257,7 @@ class StorageService {
       ...teacherData,
       id: `tch-${Date.now()}`,
     };
+    this.unmarkDeleted(this.getTeacherDeleteKeys(newTeacher));
     this.db.teachers.push(newTeacher);
     this.logAudit(actorName, 'admin', 'បន្ថែមគ្រូបង្រៀន', `បន្ថែមគ្រូ ${newTeacher.name} (${newTeacher.teacherId})`);
     this.saveDatabase(this.db);
@@ -1001,25 +1280,33 @@ class StorageService {
     const teacher = this.db.teachers.find((t) => t.id === id || t.teacherId === id);
     if (!teacher) return false;
 
-    this.db.teachers = this.db.teachers.filter((t) => t.id !== id && t.teacherId !== id);
+    this.markDeleted(this.getTeacherDeleteKeys(teacher));
+    this.knownRemoteTeacherIds.delete(teacher.id);
+
+    this.db.teachers = this.db.teachers.filter((t) => t.id !== id && t.teacherId !== id && !this.isTeacherDeleted(t));
+    removeTeacherFromCloud(teacher.id, teacher.teacherId).catch((e) =>
+      console.warn('Cloud sync delete teacher error:', e)
+    );
     this.logAudit(actorName, 'admin', 'លុបគ្រូបង្រៀន', `លុបគ្រូ ${teacher.name}`);
     this.saveDatabase(this.db);
-    removeTeacherFromCloud(teacher.id).catch((e) => console.warn('Cloud sync delete teacher error:', e));
     return true;
   }
 
   // Classes
   public getClasses(): SchoolClass[] {
-    return this.db.classes;
+    return (this.db.classes || []).filter((c) => !this.isClassDeleted(c));
   }
 
   public addClass(classData: Omit<SchoolClass, 'id'>, actorName = 'Admin'): SchoolClass {
     const normName = (classData.name || '').trim().replace(/\s+/g, ' ');
+    this.unmarkDeleted([`cls_name:${normName}`]);
+
     const existing = this.db.classes.find(
       (c) => (c.name || '').trim().replace(/\s+/g, ' ') === normName
     );
     if (existing) {
       // Update existing class instead of creating a duplicate with the same name
+      this.unmarkDeleted(this.getClassDeleteKeys(existing));
       this.updateClass(existing.id, classData, actorName);
       return existing;
     }
@@ -1029,6 +1316,7 @@ class StorageService {
       id: `cls-${Date.now()}`,
       currentStudentCount: 0,
     };
+    this.unmarkDeleted(this.getClassDeleteKeys(newClass));
     this.db.classes.push(newClass);
     this.logAudit(actorName, 'admin', 'បន្ថែមថ្នាក់រៀន', `បង្កើតថ្នាក់ ${newClass.name}`);
     this.saveDatabase(this.db);
@@ -1047,25 +1335,51 @@ class StorageService {
     return true;
   }
 
-  public deleteClass(id: string, actorName = 'Admin'): boolean {
-    const targetClass = this.db.classes.find((c) => c.id === id);
-    if (!targetClass) return false;
+  public deleteClass(id: string, actorName = 'Admin', fallbackName?: string): boolean {
+    const normFallback = (fallbackName || '').trim().replace(/\s+/g, ' ');
+    const targetClass = this.db.classes.find(
+      (c) =>
+        c.id === id ||
+        c.name === id ||
+        (normFallback && (c.name || '').trim().replace(/\s+/g, ' ') === normFallback)
+    );
 
-    this.db.classes = this.db.classes.filter((c) => c.id !== id);
+    const targetId = targetClass?.id || id;
+    const targetName = targetClass?.name || fallbackName || '';
+    const normTargetName = targetName.trim().replace(/\s+/g, ' ');
+
+    const deleteKeys = this.getClassDeleteKeys({ id: targetId, name: targetName });
+    if (id) deleteKeys.push(id);
+    this.markDeleted(deleteKeys);
+    this.knownRemoteClassIds.delete(targetId);
+    if (id) this.knownRemoteClassIds.delete(id);
+
+    const beforeLen = this.db.classes.length;
+    this.db.classes = this.db.classes.filter(
+      (c) =>
+        c.id !== targetId &&
+        c.id !== id &&
+        !this.isClassDeleted(c) &&
+        (!normTargetName || (c.name || '').trim().replace(/\s+/g, ' ') !== normTargetName)
+    );
+
     // Reassign any students in the deleted class to the first remaining class
     if (this.db.classes.length > 0) {
       const fallbackId = this.db.classes[0].id;
       this.db.students.forEach((s) => {
-        if (s.classId === id) {
+        if (s.classId === targetId || s.classId === id) {
           s.classId = fallbackId;
           syncStudentToCloud(s).catch(() => {});
         }
       });
     }
-    this.logAudit(actorName, 'admin', 'លុបថ្នាក់រៀន', `លុបថ្នាក់ ${targetClass.name}`);
+
+    removeClassFromCloud(targetId, targetName).catch((e) =>
+      console.warn('Cloud sync delete class error:', e)
+    );
+    this.logAudit(actorName, 'admin', 'លុបថ្នាក់រៀន', `លុបថ្នាក់ ${targetName || targetId}`);
     this.saveDatabase(this.db);
-    removeClassFromCloud(id).catch((e) => console.warn('Cloud sync delete class error:', e));
-    return true;
+    return this.db.classes.length < beforeLen || Boolean(targetClass);
   }
 
   // Subjects
@@ -1938,6 +2252,7 @@ class StorageService {
         studentId,
         photo: s.photo || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150',
       };
+      this.unmarkDeleted(this.getStudentDeleteKeys(newStudent));
       this.db.students.push(newStudent);
       added.push(newStudent);
       syncStudentToCloud(newStudent).catch(() => {});

@@ -48,6 +48,7 @@ interface AttendanceViewProps {
   academicYears: AcademicYear[];
   attendanceRecords?: AttendanceRecord[];
   currentUser: User;
+  initialClassId?: string;
   onOpenTelegramModal: () => void;
 }
 
@@ -58,6 +59,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   academicYears,
   attendanceRecords,
   currentUser,
+  initialClassId,
   onOpenTelegramModal,
 }) => {
   const todayStr = getTodayLocalStr();
@@ -68,9 +70,19 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     academicYears.find((y) => y.isCurrent)?.id || academicYears[0]?.id || ''
   );
   const [selectedDate, setSelectedDate] = useState<string>(() => getTodayLocalStr());
-  const [selectedClassId, setSelectedClassId] = useState<string>(classes[0]?.id || 'cls-7a');
+  const [selectedClassId, setSelectedClassId] = useState<string>(
+    initialClassId && classes.some((c) => c.id === initialClassId)
+      ? initialClassId
+      : classes[0]?.id || 'cls-7a'
+  );
   const [selectedPeriod, setSelectedPeriod] = useState<string>('ព្រឹក ម៉ោងទី ១ (០៧:០០ - ០៧:៥០)');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('sbj-math');
+
+  useEffect(() => {
+    if (initialClassId && classes.some((c) => c.id === initialClassId)) {
+      setSelectedClassId(initialClassId);
+    }
+  }, [initialClassId, classes]);
 
   // Derive active year & month from selectedDate (YYYY-MM-DD)
   const [activeYearStr, activeMonthStr, activeDayStr] = selectedDate.split('-');

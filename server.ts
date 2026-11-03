@@ -370,13 +370,22 @@ async function startServer() {
       if (!sharedServerState) {
         sharedServerState = { ...incoming, updatedAt: Date.now() };
       } else {
-        // Merge attendanceRecords by id (preferring newer createdAt)
+        const deletedSet = new Set<string>([
+          ...(Array.isArray(sharedServerState.deletedIds) ? sharedServerState.deletedIds : []),
+          ...(Array.isArray(incoming.deletedIds) ? incoming.deletedIds : []),
+        ]);
+
+        // Merge attendanceRecords by id (excluding deleted records/students)
         const mergedAttMap = new Map<string, any>();
         for (const r of sharedServerState.attendanceRecords || []) {
-          if (r && r.id) mergedAttMap.set(r.id, r);
+          if (r && r.id && !deletedSet.has(r.id) && !deletedSet.has(r.studentId)) {
+            mergedAttMap.set(r.id, r);
+          }
         }
         for (const r of incoming.attendanceRecords || []) {
-          if (r && r.id) mergedAttMap.set(r.id, r);
+          if (r && r.id && !deletedSet.has(r.id) && !deletedSet.has(r.studentId)) {
+            mergedAttMap.set(r.id, r);
+          }
         }
 
         // Merge attendanceSessions by id
@@ -388,11 +397,31 @@ async function startServer() {
           if (s && s.id) mergedSessMap.set(s.id, s);
         }
 
+        const filteredStudents = Array.isArray(incoming.students || sharedServerState.students)
+          ? (incoming.students || sharedServerState.students).filter((s: any) => {
+              if (!s) return false;
+              const code = String(s.studentId || '').trim();
+              const name = String(s.khmerName || '').trim();
+              return !deletedSet.has(s.id) && !deletedSet.has(`stu_key:${code}_${name}`);
+            })
+          : undefined;
+
+        const filteredClasses = Array.isArray(incoming.classes || sharedServerState.classes)
+          ? (incoming.classes || sharedServerState.classes).filter((c: any) => {
+              if (!c) return false;
+              const normName = String(c.name || '').trim().replace(/\s+/g, ' ');
+              return !deletedSet.has(c.id) && !deletedSet.has(`cls_name:${normName}`);
+            })
+          : undefined;
+
         sharedServerState = {
           ...sharedServerState,
           ...incoming,
+          students: filteredStudents,
+          classes: filteredClasses,
           attendanceRecords: Array.from(mergedAttMap.values()),
           attendanceSessions: Array.from(mergedSessMap.values()),
+          deletedIds: Array.from(deletedSet),
           updatedAt: Date.now(),
         };
       }

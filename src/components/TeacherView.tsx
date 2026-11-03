@@ -14,6 +14,7 @@ import {
   X,
   School,
   CreditCard,
+  CalendarCheck2,
 } from 'lucide-react';
 import { Teacher, SchoolClass, Gender, TeacherStatus } from '../types/index.ts';
 import { storage } from '../services/storage.ts';
@@ -25,12 +26,14 @@ interface TeacherViewProps {
   teachers: Teacher[];
   classes: SchoolClass[];
   onRefresh: () => void;
+  onTakeAttendance?: (classId?: string) => void;
 }
 
 export const TeacherView: React.FC<TeacherViewProps> = ({
   teachers,
   classes,
   onRefresh,
+  onTakeAttendance,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -195,7 +198,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((t) => {
-          const homeroom = classes.find((c) => c.id === t.assignedClassId);
+          const homeroom = classes.find(
+            (c) =>
+              c.id === t.assignedClassId ||
+              c.homeroomTeacherId === t.id ||
+              (c.homeroomTeacherName && c.homeroomTeacherName.trim() === t.name.trim())
+          );
 
           return (
             <div
@@ -269,11 +277,22 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex justify-between items-center">
-                <span>{t.degree}</span>
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                {onTakeAttendance ? (
+                  <button
+                    type="button"
+                    onClick={() => onTakeAttendance(homeroom?.id || classes[0]?.id)}
+                    className="px-3 py-1.5 bg-blue-950 hover:bg-blue-900 text-amber-300 border border-amber-400/50 rounded-lg text-[11px] font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                  >
+                    <CalendarCheck2 className="w-3.5 h-3.5 text-amber-400" />
+                    <span>កត់អវត្តមានថ្នាក់{homeroom ? ` (${homeroom.name})` : ''}</span>
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-slate-400">{t.degree}</span>
+                )}
                 <button
                   onClick={() => setViewingTeacher(t)}
-                  className="text-blue-900 font-semibold hover:underline cursor-pointer"
+                  className="text-xs text-blue-900 font-semibold hover:underline cursor-pointer"
                 >
                   មើលលម្អិត
                 </button>

@@ -141,7 +141,12 @@ export const StudentView: React.FC<StudentViewProps> = ({
   // Confirm single delete
   const handleDelete = () => {
     if (deleteConfirmStudent) {
-      storage.deleteStudent(deleteConfirmStudent.id);
+      storage.deleteStudent(
+        deleteConfirmStudent.id,
+        'Admin',
+        deleteConfirmStudent.studentId,
+        deleteConfirmStudent.khmerName
+      );
       setSelectedIds((prev) => prev.filter((id) => id !== deleteConfirmStudent.id));
       setDeleteConfirmStudent(null);
       setImportNotification(`បានលុបសិស្សឈ្មោះ «${deleteConfirmStudent.khmerName}» ដោយជោគជ័យ!`);

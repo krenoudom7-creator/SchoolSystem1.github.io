@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Edit,
   Check,
+  CalendarCheck2,
 } from 'lucide-react';
 import { SchoolClass, Teacher, Student, EducationLevelType } from '../types/index.ts';
 import { storage } from '../services/storage.ts';
@@ -22,6 +23,7 @@ interface ClassViewProps {
   teachers: Teacher[];
   students?: Student[];
   onRefresh: () => void;
+  onTakeAttendance?: (classId: string) => void;
 }
 
 export const ClassView: React.FC<ClassViewProps> = ({
@@ -29,6 +31,7 @@ export const ClassView: React.FC<ClassViewProps> = ({
   teachers,
   students = [],
   onRefresh,
+  onTakeAttendance,
 }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<SchoolClass | null>(null);
@@ -139,7 +142,7 @@ export const ClassView: React.FC<ClassViewProps> = ({
 
   const handleDeleteClass = () => {
     if (deleteConfirmClass) {
-      storage.deleteClass(deleteConfirmClass.id);
+      storage.deleteClass(deleteConfirmClass.id, 'Admin', deleteConfirmClass.name);
       setDeleteConfirmClass(null);
       onRefresh();
     }
@@ -262,19 +265,33 @@ export const ClassView: React.FC<ClassViewProps> = ({
                   </div>
                 </div>
 
-                {/* Homeroom teacher */}
-                <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
-                  <img
-                    src={safeAvatar(homeroom?.photo, DEFAULT_TEACHER_AVATAR)}
-                    alt={teacherDisplayName}
-                    className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                  />
-                  <div>
-                    <div className="text-[10px] text-slate-400">គ្រូទទួលបន្ទុកប្រចាំថ្នាក់</div>
-                    <div className="text-xs font-bold text-slate-900">
-                      {teacherDisplayName}
+                {/* Homeroom teacher + Quick Attendance Recording Button */}
+                <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={safeAvatar(homeroom?.photo, DEFAULT_TEACHER_AVATAR)}
+                      alt={teacherDisplayName}
+                      className="w-10 h-10 rounded-full object-cover border border-slate-200 flex-shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <div className="text-[10px] text-slate-400">គ្រូទទួលបន្ទុកប្រចាំថ្នាក់</div>
+                      <div className="text-xs font-bold text-slate-900 truncate">
+                        {teacherDisplayName}
+                      </div>
                     </div>
                   </div>
+
+                  {onTakeAttendance && (
+                    <button
+                      type="button"
+                      onClick={() => onTakeAttendance(cls.id)}
+                      className="px-3 py-1.5 bg-blue-950 hover:bg-blue-900 text-amber-300 border border-amber-400/50 rounded-lg text-[11px] font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer flex-shrink-0"
+                      title={`ចូលកត់វត្តមាន/អវត្តមានសម្រាប់ ${cls.name}`}
+                    >
+                      <CalendarCheck2 className="w-3.5 h-3.5 text-amber-400" />
+                      <span>កត់អវត្តមានថ្នាក់</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Student names preview in this class */}

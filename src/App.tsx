@@ -28,9 +28,17 @@ import { Menu, X, LayoutDashboard, CalendarCheck2, GraduationCap, FileText, More
 export default function App() {
   const [dbState, setDbState] = useState(() => storage.getDatabase());
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
+  const [attendanceTargetClassId, setAttendanceTargetClassId] = useState<string | undefined>(undefined);
   const [currentUser, setCurrentUser] = useState<User | null>(() => storage.getCurrentSession());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  const handleOpenClassAttendance = useCallback((classId?: string) => {
+    if (classId) {
+      setAttendanceTargetClassId(classId);
+    }
+    setCurrentTab('attendance');
+  }, []);
 
   // Floating Bell Notification Toast state
   const [activeToast, setActiveToast] = useState<ToastData | null>(null);
@@ -224,6 +232,7 @@ export default function App() {
               academicYears={dbState.academicYears}
               attendanceRecords={dbState.attendanceRecords}
               currentUser={currentUser}
+              initialClassId={attendanceTargetClassId}
               onOpenTelegramModal={() => setCurrentTab('telegram')}
             />
           )}
@@ -271,6 +280,7 @@ export default function App() {
               teachers={dbState.teachers}
               classes={dbState.classes}
               onRefresh={handleRefresh}
+              onTakeAttendance={handleOpenClassAttendance}
             />
           )}
 
@@ -280,6 +290,7 @@ export default function App() {
               teachers={dbState.teachers}
               students={dbState.students}
               onRefresh={handleRefresh}
+              onTakeAttendance={handleOpenClassAttendance}
             />
           )}
 
