@@ -77,11 +77,11 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
   return createPortal(
     <div
       id="official-print-modal-overlay"
-      className="fixed inset-0 bg-slate-900/70 z-50 flex items-start justify-center p-4 overflow-y-auto print:p-0 print:bg-white print:static"
+      className="fixed inset-0 bg-slate-900/70 z-50 flex items-start justify-center p-2 sm:p-4 overflow-y-auto overscroll-contain touch-pan-y print:p-0 print:bg-white print:static"
     >
       <div
         id="official-print-modal-card"
-        className="bg-white rounded-2xl max-w-4xl w-full p-8 shadow-2xl my-4 sm:my-8 print:shadow-none print:p-0 print:my-0 print:max-w-none"
+        className="bg-white rounded-2xl max-w-4xl w-full p-3 sm:p-8 shadow-2xl my-2 sm:my-8 overflow-x-auto print:overflow-visible print:shadow-none print:p-0 print:my-0 print:max-w-none"
       >
         {/* Controls: hidden during print */}
         <div className="no-print flex items-center justify-between pb-4 mb-6 border-b border-slate-200 flex-wrap gap-3">

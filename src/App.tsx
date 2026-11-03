@@ -158,26 +158,28 @@ export default function App() {
         />
 
       {/* Mobile Menu Bar Toggle */}
-      <div className="md:hidden bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between no-print">
-        <div className="flex items-center gap-2">
+      <div className="md:hidden bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between no-print sticky top-[68px] sm:top-[78px] z-20 shadow-md border-b border-amber-500/20">
+        <div className="flex items-center gap-2 min-w-0">
           <img
             src={SCHOOL_LOGO_URL}
             alt="Logo"
-            className="w-7 h-7 object-cover scale-[1.38] rounded-full bg-white p-0.5 border border-amber-400"
+            className="w-7 h-7 shrink-0 object-cover scale-[1.38] rounded-full bg-white p-0.5 border border-amber-400"
           />
-          <span className="font-moul text-xs text-amber-400">អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ</span>
+          <span className="font-moul text-xs text-amber-400 truncate">អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ</span>
         </div>
         <button
+          type="button"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-1 rounded-md text-slate-300 hover:text-white cursor-pointer"
+          className="px-2.5 py-1 rounded-lg bg-slate-800 border border-amber-400/30 text-amber-300 hover:text-white flex items-center gap-1.5 text-xs font-semibold cursor-pointer shrink-0"
         >
-          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          <span>ម៉ឺនុយ</span>
         </button>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row min-w-0">
         {/* Sidebar Desktop */}
-        <div className="hidden md:block">
+        <div className="hidden md:block flex-shrink-0">
           <Sidebar
             currentTab={currentTab}
             onSelectTab={(tab) => setCurrentTab(tab)}
@@ -186,19 +188,32 @@ export default function App() {
           />
         </div>
 
-        {/* Mobile Sidebar Drawer */}
+        {/* Mobile Sidebar Drawer (Scrollable on Android Touch Devices) */}
         {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-40 md:hidden flex">
+          <div className="fixed inset-0 z-50 md:hidden flex">
             <div
-              className="fixed inset-0 bg-slate-900/60"
+              className="fixed inset-0 bg-slate-900/65 backdrop-blur-xs transition-opacity"
               onClick={() => setIsMobileMenuOpen(false)}
             ></div>
-            <div className="relative flex-1 flex flex-col max-w-xs w-full bg-slate-900 z-50">
+            <div className="relative flex-1 flex flex-col max-w-[85vw] sm:max-w-xs w-full h-full max-h-[100dvh] overflow-y-auto overscroll-contain touch-pan-y bg-slate-900 z-50 shadow-2xl">
+              <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 bg-slate-950/95 border-b border-amber-500/25 backdrop-blur-xs">
+                <span className="font-moul text-xs text-amber-400">ម៉ឺនុយប្រព័ន្ធសាលារៀន</span>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-1.5 rounded-lg bg-slate-800 text-slate-200 hover:text-white border border-slate-700 cursor-pointer flex items-center gap-1 text-xs"
+                  aria-label="បិទម៉ឺនុយ"
+                >
+                  <X className="w-4 h-4" />
+                  <span>បិទ</span>
+                </button>
+              </div>
               <Sidebar
                 currentTab={currentTab}
                 onSelectTab={(tab) => {
                   setCurrentTab(tab);
                   setIsMobileMenuOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 userRole={currentUser.role}
                 unexcusedCount={unexcusedCount}
@@ -208,7 +223,7 @@ export default function App() {
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
+        <main className="flex-1 min-w-0 p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-28 md:pb-10 overflow-x-hidden">
           {currentTab === 'dashboard' && (
             <DashboardView
               students={dbState.students}

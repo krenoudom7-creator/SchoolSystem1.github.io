@@ -92,20 +92,20 @@ export const Header: React.FC<HeaderProps> = ({
       <KhmerCornerOrnament position="top-left" size={32} variant="gold" className="opacity-70 hidden sm:block" />
       <KhmerCornerOrnament position="top-right" size={32} variant="gold" className="opacity-70 hidden sm:block" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between min-h-[78px] py-2.5 gap-3">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between min-h-[68px] sm:min-h-[78px] py-2 gap-2 sm:gap-3">
           {/* Brand & Subtitle */}
-          <div className="flex items-center space-x-3.5 min-w-0">
-            <div className="w-13 h-13 aspect-square shrink-0 rounded-full p-0.5 bg-white border-2 border-amber-400 ring-2 ring-amber-200/70 shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+          <div className="flex items-center space-x-2.5 sm:space-x-3.5 min-w-0 flex-1">
+            <div className="w-10 h-10 sm:w-13 sm:h-13 aspect-square shrink-0 rounded-full p-0.5 bg-white border-2 border-amber-400 ring-2 ring-amber-200/70 shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               <img
                 src={SCHOOL_LOGO_URL}
                 alt="Logo អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ"
                 className="w-full h-full object-contain rounded-full"
               />
             </div>
-            <div className="min-w-0 py-0.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="font-moul text-sm sm:text-base text-blue-950 tracking-wide font-bold leading-[2] py-0.5">
+            <div className="min-w-0 py-0.5 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h1 className="font-moul text-xs sm:text-base text-blue-950 tracking-wide font-bold leading-[1.9] py-0.5 truncate max-w-full">
                   អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ
                 </h1>
                 <span className="hidden sm:inline-block px-2.5 py-0.5 text-[11px] font-semibold bg-amber-100/90 text-amber-900 border border-amber-300 rounded-md leading-relaxed">
@@ -118,16 +118,16 @@ export const Header: React.FC<HeaderProps> = ({
                   <span>Cloud Database Live</span>
                 </span>
               </div>
-              <p className="text-[11px] text-slate-600 font-medium leading-relaxed mt-0.5 flex items-center gap-1.5 flex-wrap">
+              <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-relaxed mt-0.5 flex items-center gap-1.5 flex-wrap">
                 <span className="text-amber-700 font-semibold">ព្រះរាជាណាចក្រកម្ពុជា · ជាតិ សាសនា ព្រះមហាក្សត្រ</span>
-                <span className="text-slate-300">|</span>
-                <span>ឃុំទួលសំបួរ ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម</span>
+                <span className="hidden sm:inline text-slate-300">|</span>
+                <span className="hidden sm:inline">ឃុំទួលសំបួរ ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម</span>
               </p>
             </div>
           </div>
 
           {/* Right Actions: Date, Notification Bell, User Switcher */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
             {/* Date Display */}
             <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100/80 px-3 py-1.5 rounded-lg border border-slate-200/60">
               <Calendar className="w-3.5 h-3.5 text-blue-800" />
@@ -149,7 +149,10 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setShowNotifMenu(!showNotifMenu)}
+                onClick={() => {
+                  setShowNotifMenu(!showNotifMenu);
+                  setShowRoleMenu(false);
+                }}
                 aria-label="ការជូនដំណឹង"
                 className={`relative p-2 rounded-xl transition-all cursor-pointer ${
                   unreadAlerts.length > 0
@@ -173,7 +176,7 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* Notification Dropdown */}
               {showNotifMenu && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
+                <div className="fixed sm:absolute right-2 sm:right-0 top-[72px] sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] max-w-sm sm:w-96 max-h-[80dvh] overflow-y-auto overscroll-contain touch-pan-y bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
                   <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 rounded-t-xl">
                     <div className="flex items-center gap-2 font-bold text-xs text-slate-900">
                       <div className="p-1.5 rounded-lg bg-amber-100 text-amber-700">
@@ -213,7 +216,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </button>
                   </div>
 
-                  <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
+                  <div className="max-h-64 overflow-y-auto overscroll-contain touch-pan-y divide-y divide-slate-100">
                     {notifications.slice(0, 5).map((n) => (
                       <div key={n.id} className="p-3 hover:bg-slate-50 transition-colors">
                         <div className="flex items-start justify-between gap-2">
@@ -260,7 +263,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onLogout}
               title="ចាកចេញពីប្រព័ន្ធ (Logout)"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg shadow-xs transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg shadow-xs transition-colors cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">ចាកចេញ (Logout)</span>
@@ -270,14 +273,17 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setShowRoleMenu(!showRoleMenu)}
-                className="flex items-center gap-2 p-1.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50/60 to-blue-50/60 hover:border-amber-400 hover:shadow-xs transition-all cursor-pointer"
+                onClick={() => {
+                  setShowRoleMenu(!showRoleMenu);
+                  setShowNotifMenu(false);
+                }}
+                className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50/60 to-blue-50/60 hover:border-amber-400 hover:shadow-xs transition-all cursor-pointer"
                 title="ព័ត៌មានប្រព័ន្ធរួមតែមួយ"
               >
                 <img
                   src={safeAvatar(currentUser.avatar, DEFAULT_ADMIN_AVATAR)}
                   alt="គណនីរដ្ឋបាលរួម"
-                  className="w-8 h-8 rounded-full object-cover border-2 border-amber-400 shadow-2xs"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-amber-400 shadow-2xs"
                 />
                 <div className="text-left hidden md:block">
                   <div className="text-xs font-bold text-blue-950 leading-tight">
@@ -293,7 +299,7 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* Single Unified System Information Dropdown */}
               {showRoleMenu && (
-                <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 animate-in fade-in">
+                <div className="fixed sm:absolute right-2 sm:right-0 top-[72px] sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] max-w-xs sm:w-72 max-h-[80dvh] overflow-y-auto overscroll-contain touch-pan-y bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 animate-in fade-in">
                   <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 mb-3">
                     <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-base flex-shrink-0 border border-amber-200">
                       🏫

@@ -169,7 +169,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const visibleItems = navItems;
 
   return (
-    <aside className="w-68 bg-slate-900 text-slate-100 flex-shrink-0 flex flex-col justify-between border-r border-amber-500/25 no-print min-h-[calc(100vh-4.8rem)]">
+    <aside className="w-full md:w-68 bg-slate-900 text-slate-100 flex-shrink-0 flex flex-col justify-between border-r border-amber-500/25 no-print md:sticky md:top-[78px] md:h-[calc(100vh-78px)] md:overflow-y-auto overscroll-contain touch-pan-y pb-20 md:pb-0">
       <div className="p-3">
         {/* School Logo Brand Card with Khmer Kbach Gold Frame */}
         <div className="mb-3 p-3.5 bg-gradient-to-br from-slate-800 via-slate-900 to-amber-950/30 rounded-2xl border border-amber-400/45 shadow-md relative overflow-hidden">
