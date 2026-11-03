@@ -394,7 +394,83 @@ class StorageService {
 
   constructor() {
     this.db = this.loadDatabase();
+    this.reconcileClassesAndStudents(true);
     this.initCloudSync();
+  }
+
+  private reconcileClassesAndStudents(syncRepairsToCloud = false): void {
+    if (!this.db.classes || !this.db.students) return;
+
+    // 1. Merge duplicate classes that have the exact same normalized name (e.g. two "ថ្នាក់ទី ៧ គ" classes)
+    const nameMap = new Map<string, SchoolClass>();
+    const duplicateClasses: Array<{ dup: SchoolClass; primary: SchoolClass }> = [];
+    const deduplicatedClasses: SchoolClass[] = [];
+
+    for (const cls of this.db.classes) {
+      const normName = (cls.name || '').trim().replace(/\s+/g, ' ');
+      const existing = nameMap.get(normName);
+      if (!existing) {
+        nameMap.set(normName, cls);
+        deduplicatedClasses.push(cls);
+      } else {
+        duplicateClasses.push({ dup: cls, primary: existing });
+      }
+    }
+
+    if (duplicateClasses.length > 0) {
+      this.db.classes = deduplicatedClasses;
+      for (const { dup, primary } of duplicateClasses) {
+        // Reassign students from duplicate class to primary class
+        this.db.students.forEach((s) => {
+          if (s.classId === dup.id) {
+            s.classId = primary.id;
+            syncStudentToCloud(s).catch(() => {});
+          }
+        });
+        // Reassign attendance, sessions, exam results, timetable, behavior
+        this.db.attendanceRecords?.forEach((r) => {
+          if (r.classId === dup.id) r.classId = primary.id;
+        });
+        this.db.attendanceSessions?.forEach((sess) => {
+          if (sess.classId === dup.id) sess.classId = primary.id;
+        });
+        this.db.examResults?.forEach((er) => {
+          if (er.classId === dup.id) er.classId = primary.id;
+        });
+        this.db.timetable?.forEach((tt) => {
+          if (tt.classId === dup.id) tt.classId = primary.id;
+        });
+        this.db.behaviorRecords?.forEach((br) => {
+          if (br.classId === dup.id) br.classId = primary.id;
+        });
+        removeClassFromCloud(dup.id).catch(() => {});
+      }
+    }
+
+    // 2. Repair any orphaned student.classId so no entered student is ever hidden
+    if (this.db.classes.length > 0) {
+      const validClassIds = new Set(this.db.classes.map((c) => c.id));
+      const fallbackClass = this.db.classes[0];
+      this.db.students.forEach((s) => {
+        if (!s.classId || !validClassIds.has(s.classId)) {
+          s.classId = fallbackClass.id;
+          if (syncRepairsToCloud) {
+            syncStudentToCloud(s).catch(() => {});
+          }
+        }
+      });
+    }
+
+    // 3. Always compute live currentStudentCount from actual students array
+    this.db.classes.forEach((c) => {
+      const realCount = this.db.students.filter((s) => s.classId === c.id).length;
+      if (c.currentStudentCount !== realCount) {
+        c.currentStudentCount = realCount;
+        if (syncRepairsToCloud) {
+          syncClassToCloud(c).catch(() => {});
+        }
+      }
+    });
   }
 
   private initCloudSync(): void {
@@ -404,6 +480,7 @@ class StorageService {
         onStudentsChange: (remote) => {
           if (remote && Array.isArray(remote)) {
             this.db.students = remote;
+            this.reconcileClassesAndStudents(false);
             this.saveLocalOnly(this.db);
           }
         },
@@ -416,6 +493,7 @@ class StorageService {
         onClassesChange: (remote) => {
           if (remote && Array.isArray(remote)) {
             this.db.classes = remote;
+            this.reconcileClassesAndStudents(true);
             this.saveLocalOnly(this.db);
           }
         },
@@ -450,10 +528,11 @@ class StorageService {
 
   private saveLocalOnly(data: SchoolDatabase): void {
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem(DB_KEY, JSON.stringify(data));
-      }
       this.db = data;
+      this.reconcileClassesAndStudents(false);
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(DB_KEY, JSON.stringify(this.db));
+      }
       this.notifyListeners();
     } catch (e) {
       console.error('Failed to save to localStorage', e);
@@ -527,10 +606,11 @@ class StorageService {
 
   private saveDatabase(data: SchoolDatabase): void {
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem(DB_KEY, JSON.stringify(data));
-      }
       this.db = data;
+      this.reconcileClassesAndStudents(true);
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(DB_KEY, JSON.stringify(this.db));
+      }
       this.notifyListeners();
     } catch (e) {
       console.error('Failed to save to localStorage', e);
@@ -631,12 +711,6 @@ class StorageService {
     };
     this.db.students.push(newStudent);
 
-    // update class count
-    const targetClass = this.db.classes.find((c) => c.id === newStudent.classId);
-    if (targetClass) {
-      targetClass.currentStudentCount = (targetClass.currentStudentCount || 0) + 1;
-    }
-
     this.logAudit(actorName, 'admin', 'បន្ថែមសិស្សថ្មី', `បន្ថែមសិស្ស ${newStudent.khmerName} (${newStudent.studentId})`);
     this.saveDatabase(this.db);
     syncStudentToCloud(newStudent).catch((e) => console.warn('Cloud sync student error:', e));
@@ -660,12 +734,6 @@ class StorageService {
 
     this.db.students = this.db.students.filter((s) => s.id !== id && s.studentId !== id);
 
-    // update class count
-    const targetClass = this.db.classes.find((c) => c.id === student.classId);
-    if (targetClass && targetClass.currentStudentCount && targetClass.currentStudentCount > 0) {
-      targetClass.currentStudentCount--;
-    }
-
     this.logAudit(actorName, 'admin', 'លុបសិស្ស', `លុបសិស្ស ${student.khmerName} (${student.studentId})`);
     this.saveDatabase(this.db);
     removeStudentFromCloud(student.id).catch((e) => console.warn('Cloud sync delete error:', e));
@@ -679,11 +747,6 @@ class StorageService {
     if (toDelete.length === 0) return 0;
 
     this.db.students = this.db.students.filter((s) => !idsSet.has(s.id) && !idsSet.has(s.studentId));
-
-    // Update class student counts
-    this.db.classes.forEach((c) => {
-      c.currentStudentCount = this.db.students.filter((s) => s.classId === c.id).length;
-    });
 
     this.logAudit(
       actorName,
@@ -745,6 +808,16 @@ class StorageService {
   }
 
   public addClass(classData: Omit<SchoolClass, 'id'>, actorName = 'Admin'): SchoolClass {
+    const normName = (classData.name || '').trim().replace(/\s+/g, ' ');
+    const existing = this.db.classes.find(
+      (c) => (c.name || '').trim().replace(/\s+/g, ' ') === normName
+    );
+    if (existing) {
+      // Update existing class instead of creating a duplicate with the same name
+      this.updateClass(existing.id, classData, actorName);
+      return existing;
+    }
+
     const newClass: SchoolClass = {
       ...classData,
       id: `cls-${Date.now()}`,
@@ -773,6 +846,16 @@ class StorageService {
     if (!targetClass) return false;
 
     this.db.classes = this.db.classes.filter((c) => c.id !== id);
+    // Reassign any students in the deleted class to the first remaining class
+    if (this.db.classes.length > 0) {
+      const fallbackId = this.db.classes[0].id;
+      this.db.students.forEach((s) => {
+        if (s.classId === id) {
+          s.classId = fallbackId;
+          syncStudentToCloud(s).catch(() => {});
+        }
+      });
+    }
     this.logAudit(actorName, 'admin', 'លុបថ្នាក់រៀន', `លុបថ្នាក់ ${targetClass.name}`);
     this.saveDatabase(this.db);
     removeClassFromCloud(id).catch((e) => console.warn('Cloud sync delete class error:', e));

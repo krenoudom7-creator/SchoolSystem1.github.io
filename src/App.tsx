@@ -277,6 +277,7 @@ export default function App() {
             <ClassView
               classes={dbState.classes}
               teachers={dbState.teachers}
+              students={dbState.students}
               onRefresh={handleRefresh}
             />
           )}

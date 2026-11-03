@@ -12,19 +12,21 @@ import {
   Edit,
   Check,
 } from 'lucide-react';
-import { SchoolClass, Teacher, EducationLevelType } from '../types/index.ts';
+import { SchoolClass, Teacher, Student, EducationLevelType } from '../types/index.ts';
 import { storage } from '../services/storage.ts';
-import { safeAvatar, DEFAULT_TEACHER_AVATAR } from '../utils/avatar.ts';
+import { safeAvatar, DEFAULT_TEACHER_AVATAR, DEFAULT_STUDENT_AVATAR } from '../utils/avatar.ts';
 
 interface ClassViewProps {
   classes: SchoolClass[];
   teachers: Teacher[];
+  students?: Student[];
   onRefresh: () => void;
 }
 
 export const ClassView: React.FC<ClassViewProps> = ({
   classes,
   teachers,
+  students = [],
   onRefresh,
 }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -57,14 +59,22 @@ export const ClassView: React.FC<ClassViewProps> = ({
   const handleOpenAdd = () => {
     setEditingClass(null);
     setTeacherInputMode('select');
+    const candidateNames = ['ថ្នាក់ទី ៧ ក', 'ថ្នាក់ទី ៧ ខ', 'ថ្នាក់ទី ៧ គ', 'ថ្នាក់ទី ៧ ឃ', 'ថ្នាក់ទី ៨ ក', 'ថ្នាក់ទី ៨ ខ', 'ថ្នាក់ទី ៩ ក'];
+    const existingNames = new Set(classes.map((c) => c.name.trim()));
+    const nextClassName = candidateNames.find((n) => !existingNames.has(n)) || `ថ្នាក់ទី ៧ (${classes.length + 1})`;
+
     setFormData({
-      name: 'ថ្នាក់ទី ៧ គ',
-      gradeLevel: 'ថ្នាក់ទី ៧',
+      name: nextClassName,
+      gradeLevel: nextClassName.startsWith('ថ្នាក់ទី ៨')
+        ? 'ថ្នាក់ទី ៨'
+        : nextClassName.startsWith('ថ្នាក់ទី ៩')
+        ? 'ថ្នាក់ទី ៩'
+        : 'ថ្នាក់ទី ៧',
       educationLevel: 'secondary',
       academicYearId: 'ay-2025-2026',
       homeroomTeacherId: teachers[0]?.id || '',
       homeroomTeacherName: teachers[0]?.name || '',
-      roomNumber: 'បន្ទប់ ១០៣',
+      roomNumber: `បន្ទប់ ១០${classes.length + 1}`,
       maxCapacity: 40,
     });
     setIsAddModalOpen(true);
@@ -151,7 +161,8 @@ export const ClassView: React.FC<ClassViewProps> = ({
               </h2>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              គាំទ្រកម្រិតមត្តេយ្យ បឋមសិក្សា អនុវិទ្យាល័យ វិទ្យាល័យ និងឧត្តមសិក្សា (អាចបន្ថែម កែប្រែ និងលុបថ្នាក់រៀនបាន)
+              គាំទ្រកម្រិតមត្តេយ្យ បឋមសិក្សា អនុវិទ្យាល័យ វិទ្យាល័យ និងឧត្តមសិក្សា (សិស្សសរុបក្នុងប្រព័ន្ធ៖{' '}
+              <strong className="text-blue-900">{students.length} នាក់</strong>)
             </p>
           </div>
 
@@ -197,8 +208,15 @@ export const ClassView: React.FC<ClassViewProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredClasses.map((cls) => {
           const homeroom = teachers.find((t) => t.id === cls.homeroomTeacherId);
-          const studentCount = cls.currentStudentCount || 0;
-          const capacityPercent = Math.min(100, Math.round((studentCount / cls.maxCapacity) * 100));
+          // Count students matched by classId OR fallback if only 1 class exists
+          const classStudents = students.filter(
+            (s) =>
+              s.classId === cls.id ||
+              (classes.length === 1 && (!s.classId || !classes.some((c) => c.id === s.classId)))
+          );
+          const studentCount = classStudents.length;
+          const femaleCount = classStudents.filter((s) => s.gender === 'ស្រី').length;
+          const capacityPercent = Math.min(100, Math.round((studentCount / (cls.maxCapacity || 40)) * 100));
           const teacherDisplayName = cls.homeroomTeacherName || homeroom?.name || 'មិនទាន់ចាត់តាំង';
 
           return (
@@ -252,6 +270,38 @@ export const ClassView: React.FC<ClassViewProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Student names preview in this class */}
+                {classStudents.length > 0 && (
+                  <div className="mt-3 pt-2.5 border-t border-slate-100">
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1.5">
+                      <span>បញ្ជីសិស្សក្នុងថ្នាក់៖</span>
+                      <span className="text-slate-600 font-semibold">
+                        ស្រី {femaleCount} នាក់ / ប្រុស {studentCount - femaleCount} នាក់
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                      {classStudents.slice(0, 8).map((stu) => (
+                        <span
+                          key={stu.id}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50/80 border border-blue-100 text-[11px] font-semibold text-blue-950"
+                        >
+                          <img
+                            src={safeAvatar(stu.photo, DEFAULT_STUDENT_AVATAR)}
+                            alt={stu.khmerName}
+                            className="w-3.5 h-3.5 rounded-full object-cover"
+                          />
+                          <span>{stu.khmerName}</span>
+                        </span>
+                      ))}
+                      {classStudents.length > 8 && (
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[10px] font-bold text-slate-600">
+                          +{classStudents.length - 8} នាក់ទៀត
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Student Capacity Progress */}
