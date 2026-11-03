@@ -16,6 +16,7 @@ import {
   Shield,
   ShieldCheck,
   FileText,
+  Sparkles,
 } from 'lucide-react';
 import { UserRole } from '../types/index.ts';
 import { SCHOOL_LOGO_URL } from '../utils/schoolLogo.ts';
@@ -31,6 +32,7 @@ export type NavTab =
   | 'classes'
   | 'subjects'
   | 'academic_year'
+  | 'behavior'
   | 'telegram'
   | 'security_db'
   | 'users';
@@ -132,6 +134,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       sublabel: 'Academic Years & Terms',
       icon: CalendarRange,
       allowedRoles: ['admin', 'director'],
+    },
+    {
+      id: 'behavior',
+      label: 'វិន័យ & លើកទឹកចិត្ត',
+      sublabel: 'Student Merits & Discipline',
+      icon: Sparkles,
+      allowedRoles: ['admin', 'director', 'teacher'],
     },
     {
       id: 'telegram',

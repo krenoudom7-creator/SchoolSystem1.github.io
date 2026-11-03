@@ -13,11 +13,13 @@ import {
   MapPin,
   X,
   School,
+  CreditCard,
 } from 'lucide-react';
 import { Teacher, SchoolClass, Gender, TeacherStatus } from '../types/index.ts';
 import { storage } from '../services/storage.ts';
 import { ImageUploader } from './ImageUploader.tsx';
 import { safeAvatar, DEFAULT_TEACHER_AVATAR } from '../utils/avatar.ts';
+import { IdCardGeneratorModal } from './IdCardGeneratorModal.tsx';
 
 interface TeacherViewProps {
   teachers: Teacher[];
@@ -34,6 +36,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [viewingTeacher, setViewingTeacher] = useState<Teacher | null>(null);
+  const [isIdCardModalOpen, setIsIdCardModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     teacherId: '',
@@ -138,14 +141,25 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleOpenAdd}
-            className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>បន្ថែមគ្រូថ្មី</span>
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setIsIdCardModalOpen(true)}
+              className="px-3.5 py-2 text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <CreditCard className="w-4 h-4 text-amber-700" />
+              <span>បោះពុម្ពកាតគ្រូបង្រៀន</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenAdd}
+              className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>បន្ថែមគ្រូថ្មី</span>
+            </button>
+          </div>
         </div>
 
         {/* Search */}
@@ -453,6 +467,15 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* ID Card Generator Modal (Teacher Mode) */}
+      <IdCardGeneratorModal
+        isOpen={isIdCardModalOpen}
+        onClose={() => setIsIdCardModalOpen(false)}
+        students={storage.getStudents()}
+        teachers={teachers}
+        classes={classes}
+      />
     </div>
   );
 };

@@ -15,6 +15,7 @@ import {
   Check,
   Search,
   Filter,
+  QrCode,
 } from 'lucide-react';
 import {
   Student,
@@ -27,6 +28,7 @@ import {
 import { storage } from '../services/storage.ts';
 import { formatKhmerDate, getAttendanceStatusBadge } from '../utils/calculations.ts';
 import { safeAvatar } from '../utils/avatar.ts';
+import { QrAttendanceScannerModal } from './QrAttendanceScannerModal.tsx';
 
 interface AttendanceViewProps {
   students: Student[];
@@ -68,6 +70,17 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   }>({ show: false, message: '', unexcusedSent: 0 });
   const [isExistingSession, setIsExistingSession] = useState(false);
   const [filterQuery, setFilterQuery] = useState('');
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+  const handleScanMarkAttendance = (studentId: string, status: AttendanceStatus) => {
+    setAttendanceState((prev) => ({
+      ...prev,
+      [studentId]: {
+        status,
+        reason: prev[studentId]?.reason || 'ស្កេនតាម QR Code / Barcode Scanner',
+      },
+    }));
+  };
 
   // Period options for Cambodian secondary school
   const periodOptions = [
@@ -243,7 +256,16 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setIsScannerOpen(true)}
+              className="px-4 py-2.5 text-xs font-bold bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer ring-2 ring-amber-300"
+            >
+              <QrCode className="w-4 h-4 text-slate-950" />
+              <span>📷 ស្កេន QR Code កត់វត្តមាន</span>
+            </button>
+
             <button
               type="button"
               onClick={handleMarkAllPresent}
@@ -619,6 +641,17 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* QR & Barcode Attendance Scanner Modal */}
+      <QrAttendanceScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        students={students}
+        classes={classes}
+        selectedDate={selectedDate}
+        selectedPeriod={selectedPeriod}
+        onMarkAttendance={handleScanMarkAttendance}
+      />
     </div>
   );
 };

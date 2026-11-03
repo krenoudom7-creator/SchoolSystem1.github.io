@@ -14,6 +14,7 @@ import {
   AuditLogItem,
   AttendanceStatus,
   BannerSlide,
+  StudentBehaviorRecord,
 } from '../types/index.ts';
 import {
   startFirestoreSync,
@@ -46,6 +47,7 @@ export interface SchoolDatabase {
   notifications: NotificationItem[];
   auditLogs: AuditLogItem[];
   banners: BannerSlide[];
+  behaviorRecords: StudentBehaviorRecord[];
   telegramSettings: {
     botUsername: string;
     botToken: string;
@@ -256,6 +258,41 @@ const INITIAL_BANNERS: BannerSlide[] = [
   },
 ];
 
+const INITIAL_BEHAVIOR_RECORDS: StudentBehaviorRecord[] = [
+  {
+    id: 'beh-1',
+    studentId: 'stu-1',
+    studentName: 'ស៊ុយ ចាន់ដារ៉ា',
+    classId: 'cls-7a',
+    className: 'ថ្នាក់ទី ៧ក',
+    type: 'merit',
+    category: 'សិស្សគំរូ & សិក្សាពូកែ',
+    title: 'ទទួលបានចំណាត់ថ្នាក់លេខ ១ ប្រចាំខែ',
+    description: 'ខិតខំរៀនសូត្រ យកចិត្តទុកដាក់ស្ដាប់ការពន្យល់របស់លោកគ្រូ-អ្នកគ្រូ និងជួយបង្រៀនមិត្តរួមថ្នាក់។',
+    points: 10,
+    actionTaken: 'ផ្ដល់ប័ណ្ណសរសើរនៅមុខទង់ជាតិ',
+    recordedBy: 'លោក ស៊ុយ បូរ៉ា (Admin)',
+    date: '2026-10-25',
+    telegramSent: true,
+  },
+  {
+    id: 'beh-2',
+    studentId: 'stu-2',
+    studentName: 'កែវ សោភា',
+    classId: 'cls-7a',
+    className: 'ថ្នាក់ទី ៧ក',
+    type: 'merit',
+    category: 'ជួយកិច្ចការសាលា & សង្គម',
+    title: 'ចូលរួមសកម្មភាពអនាម័យ និងដាំកូនឈើក្នុងបរិវេណសាលា',
+    description: 'បានជួយរៀបចំសណ្ដាប់ធ្នាប់ និងអនាម័យក្នុងថ្នាក់រៀនបានយ៉ាងល្អស្អាត។',
+    points: 5,
+    actionTaken: 'លើកទឹកចិត្តជាសាធារណៈ',
+    recordedBy: 'លោកគ្រូ សុខ វិសាល',
+    date: '2026-10-28',
+    telegramSent: true,
+  },
+];
+
 class StorageService {
   private db: SchoolDatabase;
   private listeners: Array<() => void> = [];
@@ -344,6 +381,9 @@ class StorageService {
             }));
           }
           parsed.banners = parsed.banners && parsed.banners.length > 0 ? parsed.banners : INITIAL_BANNERS;
+          parsed.behaviorRecords = parsed.behaviorRecords && parsed.behaviorRecords.length > 0
+            ? parsed.behaviorRecords
+            : INITIAL_BEHAVIOR_RECORDS;
           if (!parsed.telegramSettings || parsed.telegramSettings.botToken?.includes('Simulated') || !parsed.telegramSettings.botUsername) {
             parsed.telegramSettings = {
               botUsername: '@machin_caffee_bot',
@@ -375,6 +415,7 @@ class StorageService {
       notifications: INITIAL_NOTIFICATIONS,
       auditLogs: INITIAL_AUDIT_LOGS,
       banners: INITIAL_BANNERS,
+      behaviorRecords: INITIAL_BEHAVIOR_RECORDS,
       telegramSettings: {
         botUsername: '@machin_caffee_bot',
         botToken: '8854828129:AAHp_oHUOkQ1u9vJiT8tFU8HtSygyaZHWyU',
@@ -1288,6 +1329,64 @@ class StorageService {
     } catch (e) {
       console.warn('Failed to clear session:', e);
     }
+  }
+
+  // Behavior & Merits Management
+  public getBehaviorRecords(): StudentBehaviorRecord[] {
+    return this.db.behaviorRecords || [];
+  }
+
+  public addBehaviorRecord(record: Omit<StudentBehaviorRecord, 'id'>, actorName = 'Admin'): StudentBehaviorRecord {
+    const newRecord: StudentBehaviorRecord = {
+      ...record,
+      id: `beh-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+    };
+    if (!this.db.behaviorRecords) this.db.behaviorRecords = [];
+    this.db.behaviorRecords.unshift(newRecord);
+    this.logAudit(actorName, 'admin', 'កត់ត្រាវិន័យ/លើកទឹកចិត្ត', `${record.type === 'merit' ? 'លើកទឹកចិត្ត' : 'វិន័យ'} សិស្ស ${record.studentName}: ${record.title}`);
+    this.saveDatabase(this.db);
+    return newRecord;
+  }
+
+  public updateBehaviorRecord(id: string, updates: Partial<StudentBehaviorRecord>, actorName = 'Admin'): boolean {
+    if (!this.db.behaviorRecords) return false;
+    const idx = this.db.behaviorRecords.findIndex((b) => b.id === id);
+    if (idx === -1) return false;
+    this.db.behaviorRecords[idx] = { ...this.db.behaviorRecords[idx], ...updates };
+    this.logAudit(actorName, 'admin', 'កែប្រែកំណត់ត្រាវិន័យ', `កែប្រែកំណត់ត្រារបស់សិស្ស ${this.db.behaviorRecords[idx].studentName}`);
+    this.saveDatabase(this.db);
+    return true;
+  }
+
+  public deleteBehaviorRecord(id: string, actorName = 'Admin'): boolean {
+    if (!this.db.behaviorRecords) return false;
+    const rec = this.db.behaviorRecords.find((b) => b.id === id);
+    if (!rec) return false;
+    this.db.behaviorRecords = this.db.behaviorRecords.filter((b) => b.id !== id);
+    this.logAudit(actorName, 'admin', 'លុបកំណត់ត្រាវិន័យ', `លុបកំណត់ត្រារបស់សិស្ស ${rec.studentName}`);
+    this.saveDatabase(this.db);
+    return true;
+  }
+
+  // Bulk Student Import
+  public bulkAddStudents(studentsList: Array<Omit<Student, 'id'>>, actorName = 'Admin'): Student[] {
+    const added: Student[] = [];
+    studentsList.forEach((s, idx) => {
+      const studentId = s.studentId?.trim() || `STU-${Date.now().toString().slice(-4)}${idx + 1}`;
+      const newStudent: Student = {
+        ...s,
+        id: `stu-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 4)}`,
+        studentId,
+        photo: s.photo || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150',
+      };
+      this.db.students.push(newStudent);
+      added.push(newStudent);
+      syncStudentToCloud(newStudent).catch(() => {});
+    });
+
+    this.logAudit(actorName, 'admin', 'នាំចូលសិស្សជាក្រុម (Excel Import)', `បាននាំចូលសិស្សចំនួន ${added.length} នាក់ដោយជោគជ័យ`);
+    this.saveDatabase(this.db);
+    return added;
   }
 }
 

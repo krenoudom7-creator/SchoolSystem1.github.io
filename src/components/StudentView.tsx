@@ -15,11 +15,17 @@ import {
   Check,
   AlertCircle,
   GraduationCap,
+  Upload,
+  CreditCard,
+  FileCheck,
 } from 'lucide-react';
 import { Student, SchoolClass, Gender, StudentStatus } from '../types/index.ts';
 import { storage } from '../services/storage.ts';
 import { ImageUploader } from './ImageUploader.tsx';
 import { safeAvatar, DEFAULT_STUDENT_AVATAR } from '../utils/avatar.ts';
+import { StudentImportModal } from './StudentImportModal.tsx';
+import { IdCardGeneratorModal } from './IdCardGeneratorModal.tsx';
+import { StudyCertificateModal } from './StudyCertificateModal.tsx';
 
 interface StudentViewProps {
   students: Student[];
@@ -40,6 +46,11 @@ export const StudentView: React.FC<StudentViewProps> = ({
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
   const [deleteConfirmStudent, setDeleteConfirmStudent] = useState<Student | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isIdCardModalOpen, setIsIdCardModalOpen] = useState(false);
+  const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+  const [selectedStudentForCert, setSelectedStudentForCert] = useState<Student | undefined>(undefined);
+  const [importNotification, setImportNotification] = useState<string>('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -180,14 +191,44 @@ export const StudentView: React.FC<StudentViewProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsImportModalOpen(true)}
+              className="px-3.5 py-2 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <Upload className="w-4 h-4 text-blue-700" />
+              <span>នាំចូល Excel/CSV</span>
+            </button>
+
             <button
               type="button"
               onClick={handleExportCsv}
-              className="px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <Download className="w-4 h-4" />
-              <span>ទាញយកបញ្ជី (CSV)</span>
+              <Download className="w-4 h-4 text-slate-600" />
+              <span>ទាញយក CSV</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsIdCardModalOpen(true)}
+              className="px-3.5 py-2 text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <CreditCard className="w-4 h-4 text-amber-700" />
+              <span>បោះពុម្ពកាតសិស្ស</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedStudentForCert(undefined);
+                setIsCertModalOpen(true);
+              }}
+              className="px-3.5 py-2 text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <FileCheck className="w-4 h-4 text-indigo-700" />
+              <span>លិខិតបញ្ជាក់</span>
             </button>
 
             <button
@@ -200,6 +241,13 @@ export const StudentView: React.FC<StudentViewProps> = ({
             </button>
           </div>
         </div>
+
+        {importNotification && (
+          <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2">
+            <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <span>{importNotification}</span>
+          </div>
+        )}
 
         {/* Filter & Search Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
@@ -302,7 +350,26 @@ export const StudentView: React.FC<StudentViewProps> = ({
                       </span>
                     </td>
                     <td className="py-3 px-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedStudentForCert(student);
+                            setIsCertModalOpen(true);
+                          }}
+                          title="ចេញលិខិតបញ្ជាក់ការសិក្សា"
+                          className="p-1.5 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <FileCheck className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsIdCardModalOpen(true)}
+                          title="បោះពុម្ពកាតសិស្ស"
+                          className="p-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <CreditCard className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           type="button"
                           onClick={() => setViewingStudent(student)}
@@ -655,6 +722,40 @@ export const StudentView: React.FC<StudentViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Feature 1: Student Import Modal */}
+      <StudentImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        classes={classes}
+        existingStudents={students}
+        onImportSuccess={(count) => {
+          onRefresh();
+          setImportNotification(`បាននាំចូលសិស្សចំនួន ${count} នាក់ដោយជោគជ័យចូលទៅក្នុងប្រព័ន្ធ!`);
+          setTimeout(() => setImportNotification(''), 5000);
+        }}
+      />
+
+      {/* Feature 2: ID Card Generator Modal */}
+      <IdCardGeneratorModal
+        isOpen={isIdCardModalOpen}
+        onClose={() => setIsIdCardModalOpen(false)}
+        students={students}
+        teachers={storage.getTeachers()}
+        classes={classes}
+      />
+
+      {/* Feature 3: Study & Transfer Certificate Modal */}
+      <StudyCertificateModal
+        isOpen={isCertModalOpen}
+        onClose={() => {
+          setIsCertModalOpen(false);
+          setSelectedStudentForCert(undefined);
+        }}
+        students={students}
+        classes={classes}
+        preSelectedStudent={selectedStudentForCert}
+      />
     </div>
   );
 };

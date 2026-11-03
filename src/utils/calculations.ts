@@ -207,6 +207,17 @@ export function checkAbsenceWarning(studentRecords: AttendanceRecord[], threshol
 }
 
 /**
+ * Converts Western digits to Khmer numerals e.g. 2026 -> ២០២៦
+ */
+export function toKhmerNum(num: number | string): string {
+  const khmerNumbers = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
+  return num.toString().split('').map((d) => {
+    const parsed = parseInt(d, 10);
+    return isNaN(parsed) ? d : khmerNumbers[parsed];
+  }).join('');
+}
+
+/**
  * Formats a Khmer date string e.g. ថ្ងៃសុក្រ ទី៣០ ខែតុលា ឆ្នាំ២០២៦
  */
 export function formatKhmerDate(dateString: string): string {
@@ -219,16 +230,11 @@ export function formatKhmerDate(dateString: string): string {
       'មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា',
       'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'
     ];
-    const khmerNumbers = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
-
-    const toKhmerNumber = (num: number): string => {
-      return num.toString().split('').map(d => khmerNumbers[parseInt(d, 10)] ?? d).join('');
-    };
 
     const dayName = khmerDays[date.getDay()];
-    const day = toKhmerNumber(date.getDate());
+    const day = toKhmerNum(date.getDate());
     const month = khmerMonths[date.getMonth()];
-    const year = toKhmerNumber(date.getFullYear());
+    const year = toKhmerNum(date.getFullYear());
 
     return `ថ្ងៃ${dayName} ទី${day} ខែ${month} ឆ្នាំ${year}`;
   } catch {

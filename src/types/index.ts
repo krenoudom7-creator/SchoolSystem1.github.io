@@ -216,3 +216,22 @@ export interface BannerSlide {
   order: number;
 }
 
+export type BehaviorType = 'merit' | 'discipline';
+
+export interface StudentBehaviorRecord {
+  id: string;
+  studentId: string;
+  studentName: string;
+  classId: string;
+  className: string;
+  type: BehaviorType;
+  category: string;
+  title: string;
+  description: string;
+  points: number;
+  actionTaken?: string;
+  recordedBy: string;
+  date: string;
+  telegramSent?: boolean;
+}
+

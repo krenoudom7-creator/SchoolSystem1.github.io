@@ -17,6 +17,8 @@ import {
   ChevronRight,
   BookOpen,
   FileSpreadsheet,
+  Sparkles,
+  CreditCard,
 } from 'lucide-react';
 import {
   Student,
@@ -417,6 +419,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <FileSpreadsheet className="w-5 h-5 text-amber-700 group-hover:scale-110 transition-transform mb-1.5" />
               <div className="text-xs font-semibold text-slate-900">របាយការណ៍វត្តមាន</div>
               <div className="text-[10px] text-slate-500">ស្ថិតិ និងទិន្នន័យផ្លូវការ</div>
+            </button>
+
+            <button
+              onClick={() => onNavigate('behavior')}
+              className="p-3 text-left bg-slate-50 hover:bg-rose-50/70 border border-slate-200 rounded-xl transition-all cursor-pointer group"
+            >
+              <Sparkles className="w-5 h-5 text-rose-600 group-hover:scale-110 transition-transform mb-1.5" />
+              <div className="text-xs font-semibold text-slate-900">វិន័យ & លើកទឹកចិត្ត</div>
+              <div className="text-[10px] text-slate-500">កត់ត្រាវិន័យ សិស្សគំរូ</div>
+            </button>
+
+            <button
+              onClick={() => onNavigate('students')}
+              className="p-3 text-left bg-slate-50 hover:bg-purple-50/70 border border-slate-200 rounded-xl transition-all cursor-pointer group"
+            >
+              <CreditCard className="w-5 h-5 text-purple-600 group-hover:scale-110 transition-transform mb-1.5" />
+              <div className="text-xs font-semibold text-slate-900">កាត & ស្កេន QR</div>
+              <div className="text-[10px] text-slate-500">បោះពុម្ពកាត និងនាំចូល</div>
             </button>
           </div>
         </div>

@@ -15,6 +15,7 @@ import { TelegramNotificationView } from './components/TelegramNotificationView.
 import { SecurityBackupView } from './components/SecurityBackupView.tsx';
 import { GradeExamView } from './components/GradeExamView.tsx';
 import { TimetableView } from './components/TimetableView.tsx';
+import { BehaviorView } from './components/BehaviorView.tsx';
 import { UsersManagementView } from './components/UsersManagementView.tsx';
 import { LoginModal } from './components/LoginModal.tsx';
 import { LoginScreen } from './components/LoginScreen.tsx';
@@ -292,6 +293,14 @@ export default function App() {
               academicYears={dbState.academicYears}
               classes={dbState.classes}
               students={dbState.students}
+              onRefresh={handleRefresh}
+            />
+          )}
+
+          {currentTab === 'behavior' && (
+            <BehaviorView
+              students={dbState.students}
+              classes={dbState.classes}
               onRefresh={handleRefresh}
             />
           )}
