@@ -59,7 +59,7 @@ const INITIAL_USERS: User[] = [
     id: 'usr-admin',
     username: 'admin',
     password: 'admin123',
-    name: 'លោក ស៊ុយ បូរ៉ា (Admin)',
+    name: 'រដ្ឋបាលសាលារួម (លោក ស៊ុយ បូរ៉ា)',
     role: 'admin',
     email: 'admin@toulsambour.edu.kh',
     phone: '012 888 999',
@@ -1222,11 +1222,21 @@ class StorageService {
       return null;
     }
 
+    const trimmedUser = (username || '').trim().toLowerCase();
+    const primaryAdmin = this.db.users.find((u) => u.username === 'admin') || this.db.users[0] || INITIAL_USERS[0];
+
+    // If username is empty or 'admin', immediately authenticate into unified school administration
+    if (!trimmedUser || trimmedUser === 'admin') {
+      this.logAudit(primaryAdmin.name, 'admin', 'ចូលប្រើប្រព័ន្ធរួម', 'ចូលប្រើប្រព័ន្ធរួមដោយជោគជ័យ (Unified System Access)');
+      return primaryAdmin;
+    }
+
+    // Otherwise find the specified user
     const user = this.db.users.find(
-      (u) => u.username.toLowerCase() === username.trim().toLowerCase()
+      (u) => u.username.toLowerCase() === trimmedUser
     );
     if (user && user.status !== 'inactive') {
-      this.logAudit(user.name, user.role, 'ចូលប្រើប្រព័ន្ធ', `ចូលប្រើប្រព័ន្ធដោយជោគជ័យ (Login)`);
+      this.logAudit(user.name, user.role, 'ចូលប្រើប្រព័ន្ធរួម', `ចូលប្រើប្រព័ន្ធរួមដោយជោគជ័យ (${user.name})`);
       return user;
     }
     return null;

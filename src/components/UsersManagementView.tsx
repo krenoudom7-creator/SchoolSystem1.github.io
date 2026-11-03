@@ -422,11 +422,11 @@ export const UsersManagementView: React.FC<UsersManagementViewProps> = ({
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-blue-900" />
               <h2 className="text-xl font-bold font-moul text-slate-900">
-                គ្រប់គ្រងអ្នកប្រើប្រាស់ & គណនី Admin
+                ការគ្រប់គ្រងប្រព័ន្ធរួមតែមួយ & លេខកូដសម្ងាត់
               </h2>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              បង្កើត បន្ថែម កែប្រែលេខកូដសម្ងាត់ (Password) និងកំណត់សិទ្ធិអ្នកគ្រប់គ្រងប្រព័ន្ធទាំងអស់
+              ប្រព័ន្ធដំណើរការរួមតែមួយ (Single Unified System) សម្រាប់លោកគ្រូ-អ្នកគ្រូ និងបុគ្គលិកទាំងអស់ប្រើប្រាស់រួមគ្នាដោយប្រើលេខកូដសម្ងាត់តែមួយគត់
             </p>
           </div>
 

@@ -156,8 +156,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
-  // Filter based on user role
-  const visibleItems = navItems.filter((item) => item.allowedRoles.includes(userRole));
+  // In Single Unified System Mode: All modules are fully unlocked for all staff!
+  const visibleItems = navItems;
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-100 flex-shrink-0 flex flex-col justify-between border-r border-slate-800 no-print min-h-[calc(100vh-4rem)]">

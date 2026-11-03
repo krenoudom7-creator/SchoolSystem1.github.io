@@ -10,6 +10,7 @@ import {
   KeyRound,
   RotateCcw,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { storage } from '../services/storage.ts';
 import { User } from '../types/index.ts';
@@ -147,69 +148,101 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             </div>
           )}
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                ឈ្មោះគណនីអ្នកប្រើប្រាស់ (Username)
-              </label>
-              <div className="relative">
-                <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin ឬ ឈ្មោះគណនីលោកអ្នក..."
-                  className="w-full text-xs pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-900 focus:outline-hidden transition-all text-slate-900"
-                />
+            {/* Single Unified System Banner */}
+            <div className="mt-3 p-3 bg-amber-50/90 border border-amber-300/80 rounded-2xl text-xs text-amber-950 leading-relaxed">
+              <div className="font-bold flex items-center gap-1.5 text-blue-950 mb-1">
+                <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>ប្រព័ន្ធដំណើរការរួមតែមួយ (Single Unified System)</span>
               </div>
+              <p className="text-[11px] text-amber-900">
+                លោកគ្រូ-អ្នកគ្រូ និងបុគ្គលិកទាំងអស់ប្រើប្រាស់ប្រព័ន្ធរួមគ្នាតែមួយ ដោយប្រើលេខកូដសម្ងាត់រួមតែមួយគត់ និងមានសិទ្ធិពេញលេញដូចគ្នាទាំងអស់។
+              </p>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-slate-700">
-                  លេខកូដសម្ងាត់ប្រព័ន្ធ (System Passcode)
+            {/* Login Form */}
+            <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-800">
+                    លេខកូដសម្ងាត់ប្រព័ន្ធរួម (System Passcode)
+                  </label>
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    លេខកូដរួមតែមួយគត់
+                  </span>
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    id="login-password-input"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoFocus
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="បញ្ចូលលេខកូដសម្ងាត់រួម (ឧ. admin123)..."
+                    className="w-full text-xs pl-10 pr-10 py-2.5 bg-slate-50 border-2 border-amber-300 focus:border-amber-500 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-hidden transition-all text-slate-900 font-mono font-bold"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  ឈ្មោះគណនី (ស្រេចចិត្ត / Optional)
                 </label>
-                <span className="text-[10px] text-blue-900 font-medium">
-                  លេខកូដរួមតែមួយគត់
-                </span>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="admin ឬ ឈ្មោះលោកអ្នក (ស្រេចចិត្ត)..."
+                    className="w-full text-xs pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-900 focus:outline-hidden transition-all text-slate-700"
+                  />
+                </div>
               </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  id="login-password-input"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="បញ្ចូលលេខកូដសម្ងាត់រួម..."
-                  className="w-full text-xs pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-900 focus:outline-hidden transition-all text-slate-900 font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 hover:from-blue-800 hover:to-indigo-800 text-white text-xs font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-75"
-            >
-              {isLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <LogIn className="w-4 h-4 text-amber-400" />
-              )}
-              <span>ចូលប្រើប្រព័ន្ធ (Sign In to System)</span>
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 hover:from-blue-800 hover:to-indigo-800 text-white text-xs font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-75"
+              >
+                {isLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <LogIn className="w-4 h-4 text-amber-400" />
+                )}
+                <span>ចូលប្រើប្រព័ន្ធរួម (Enter Unified System)</span>
+              </button>
+
+              {/* Instant 1-Click Quick Entry Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const code = storage.getSystemAccessCode();
+                  setPassword(code);
+                  setUsername('admin');
+                  setIsLoading(true);
+                  setTimeout(() => {
+                    const authed = storage.authenticate('admin', code);
+                    if (authed) {
+                      storage.setSession(authed);
+                      onLoginSuccess(authed);
+                    }
+                  }, 200);
+                }}
+                className="w-full py-2 px-3 bg-amber-100 hover:bg-amber-200 text-amber-950 text-[11px] font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-amber-300 shadow-2xs"
+              >
+                <KeyRound className="w-3.5 h-3.5 text-amber-700" />
+                <span>ចូលប្រើរហ័ស (លេខកូដរួម៖ {storage.getSystemAccessCode()})</span>
+              </button>
+            </form>
 
           {/* Quick Fill / Remembered Account - ONLY VISIBLE IF PREVIOUSLY LOGGED IN */}
           {rememberedUser && (

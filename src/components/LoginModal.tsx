@@ -54,12 +54,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     e.preventDefault();
     setErrorMessage('');
 
-    if (!username.trim() || !password.trim()) {
-      setErrorMessage('សូមបំពេញ Username និង លេខកូដសម្ងាត់ (Passcode) ឱ្យបានត្រឹមត្រូវ!');
+    if (!password.trim()) {
+      setErrorMessage('សូមបញ្ចូលលេខកូដសម្ងាត់រួម (Passcode) របស់សាលា!');
       return;
     }
 
-    const authenticatedUser = storage.authenticate(username.trim(), password.trim());
+    const targetUser = username.trim() || 'admin';
+    const authenticatedUser = storage.authenticate(targetUser, password.trim());
     if (authenticatedUser) {
       setSuccessMessage(`សូមស្វាគមន៍ ${authenticatedUser.name}!`);
 
