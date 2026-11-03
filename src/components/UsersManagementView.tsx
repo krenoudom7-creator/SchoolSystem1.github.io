@@ -93,6 +93,10 @@ export const UsersManagementView: React.FC<UsersManagementViewProps> = ({
     checkTierStatus();
   }, []);
 
+  useEffect(() => {
+    setSystemAccessCode(storage.getSystemAccessCode());
+  }, [users]);
+
   const toggleShowPassword = (userId: string) => {
     setShowPasswords((prev) => ({
       ...prev,

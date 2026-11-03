@@ -44,6 +44,22 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [isEditingPasscode, setIsEditingPasscode] = useState(false);
+  const [newPasscodeInput, setNewPasscodeInput] = useState('');
+  const [passcodeSavedMsg, setPasscodeSavedMsg] = useState('');
+
+  const currentSharedCode = storage.getSystemAccessCode();
+
+  const handleSaveInlinePasscode = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newPasscodeInput.trim();
+    if (trimmed.length < 4) return;
+    storage.setSystemAccessCode(trimmed, currentUser.name);
+    setIsEditingPasscode(false);
+    setNewPasscodeInput('');
+    setPasscodeSavedMsg(`បានធ្វើបច្ចុប្បន្នភាពលេខកូដរួម "${trimmed}" ទៅគ្រប់ឧបករណ៍!`);
+    setTimeout(() => setPasscodeSavedMsg(''), 3500);
+  };
 
   const todayStr = getTodayLocalStr();
   const khmerDateStr = formatKhmerDate(todayStr);
@@ -299,20 +315,62 @@ export const Header: React.FC<HeaderProps> = ({
                       <span>លេខកូដសម្ងាត់រួមរបស់សាលា៖</span>
                     </div>
                     <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-amber-300 font-mono font-bold text-sm text-blue-950">
-                      <span>{storage.getSystemAccessCode()}</span>
+                      <span>{currentSharedCode}</span>
                       <span className="text-[10px] font-sans font-medium text-slate-400">ប្រើរួមគ្នាទាំងអស់</span>
                     </div>
+                    {passcodeSavedMsg && (
+                      <div className="mt-1.5 px-2 py-1 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-800 text-[10px] font-bold">
+                        ✓ {passcodeSavedMsg}
+                      </div>
+                    )}
                     <p className="text-[10px] text-amber-800 mt-1.5">
                       គ្រប់លោកគ្រូ-អ្នកគ្រូ និងបុគ្គលិកទាំងអស់ប្រើប្រព័ន្ធរួមគ្នាតែមួយ ដោយប្រើលេខកូដនេះ និងមានសិទ្ធិពេញលេញដូចគ្នា។
                     </p>
                   </div>
 
+                  {isEditingPasscode && (
+                    <form onSubmit={handleSaveInlinePasscode} className="mb-3 p-2.5 bg-slate-50 border border-blue-200 rounded-xl space-y-2">
+                      <label className="block text-[11px] font-bold text-blue-950">
+                        បញ្ចូលលេខកូដសម្ងាត់រួមថ្មី (យ៉ាងតិច ៤ តួអក្សរ)៖
+                      </label>
+                      <input
+                        type="text"
+                        value={newPasscodeInput}
+                        onChange={(e) => setNewPasscodeInput(e.target.value)}
+                        placeholder={currentSharedCode}
+                        className="w-full px-2.5 py-1.5 text-xs font-mono font-bold bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-900 text-slate-900"
+                        autoFocus
+                      />
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="submit"
+                          disabled={newPasscodeInput.trim().length < 4}
+                          className="flex-1 py-1.5 px-2.5 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
+                        >
+                          រក្សាទុករួមគ្នា
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingPasscode(false);
+                            setNewPasscodeInput('');
+                          }}
+                          className="py-1.5 px-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
+                        >
+                          បោះបង់
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
                   <div className="space-y-1.5 pt-1">
                     <button
                       type="button"
                       onClick={() => {
-                        setShowRoleMenu(false);
-                        onOpenLoginModal();
+                        setIsEditingPasscode(!isEditingPasscode);
+                        if (!isEditingPasscode) {
+                          setNewPasscodeInput(currentSharedCode);
+                        }
                       }}
                       className="w-full text-left px-3 py-2 text-xs bg-slate-50 hover:bg-slate-100 text-slate-800 rounded-xl flex items-center gap-2 font-medium transition-colors cursor-pointer border border-slate-200"
                     >

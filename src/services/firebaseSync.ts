@@ -148,9 +148,7 @@ export function startFirestoreSync(callbacks: SyncCallback): () => void {
             id: data.id || docSnap.id,
           });
         });
-        if (users.length > 0) {
-          callbacks.onUsersChange?.(users);
-        }
+        callbacks.onUsersChange?.(users);
       },
       (error) => {
         console.warn('Users sync warning (continuing with local cache):', error.message);

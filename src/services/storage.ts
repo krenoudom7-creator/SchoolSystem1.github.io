@@ -59,11 +59,13 @@ export interface SchoolDatabase {
   deletedIds?: string[];
 }
 
+const DEFAULT_SYSTEM_ACCESS_CODE = 'Udom26';
+
 const INITIAL_USERS: User[] = [
   {
     id: 'usr-admin',
     username: 'admin',
-    password: 'admin123',
+    password: DEFAULT_SYSTEM_ACCESS_CODE,
     name: 'រដ្ឋបាលសាលារួម (លោក លាង បេន)',
     role: 'admin',
     email: 'admin@toulsambour.edu.kh',
@@ -650,6 +652,7 @@ class StorageService {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          systemAccessCode: this.db.systemAccessCode || DEFAULT_SYSTEM_ACCESS_CODE,
           attendanceRecords: this.db.attendanceRecords,
           attendanceSessions: this.db.attendanceSessions,
           students: this.db.students,
@@ -672,6 +675,21 @@ class StorageService {
         if (!data || !data.state) return;
         const st = data.state;
         let changed = false;
+
+        if (
+          typeof st.systemAccessCode === 'string' &&
+          st.systemAccessCode.trim().length >= 4 &&
+          st.systemAccessCode.trim() !== 'admin123' &&
+          st.systemAccessCode.trim() !== this.db.systemAccessCode
+        ) {
+          const syncedCode = st.systemAccessCode.trim();
+          this.db.systemAccessCode = syncedCode;
+          this.db.users = (this.db.users || []).map((u) => ({
+            ...u,
+            password: syncedCode,
+          }));
+          changed = true;
+        }
 
         if (Array.isArray(st.deletedIds) && st.deletedIds.length > 0) {
           const prevCount = (this.db.deletedIds || []).length;
@@ -912,18 +930,48 @@ class StorageService {
           }
         },
         onUsersChange: (remote) => {
-          if (remote && remote.length > 0) {
-            const admin = this.db.users.find((u) => u.username === 'admin');
-            const map = new Map<string, User>();
-            this.db.users.forEach((u) => map.set(u.id, u));
-            remote.forEach((u) => map.set(u.id, u));
-            const merged = Array.from(map.values());
-            if (admin && !merged.some((u) => u.username === 'admin')) {
-              merged.unshift(admin);
-            }
-            this.db.users = merged;
-            this.saveLocalOnly(this.db);
+          if (!remote || remote.length === 0) {
+            // Firestore users collection is empty: seed our unified admin user & passcode to Cloud
+            const localCode = this.db.systemAccessCode || DEFAULT_SYSTEM_ACCESS_CODE;
+            this.db.users.forEach((u) => {
+              syncUserToCloud({ ...u, password: localCode }).catch(() => {});
+            });
+            return;
           }
+
+          const remoteAdmin =
+            remote.find((u) => u.id === 'usr-admin' || u.username === 'admin') || remote[0];
+          const remotePass = remoteAdmin?.password ? String(remoteAdmin.password).trim() : '';
+
+          // If remote still had legacy un-synced 'admin123', upgrade remote to current shared passcode
+          if (!remotePass || (remotePass === 'admin123' && this.db.systemAccessCode && this.db.systemAccessCode !== 'admin123')) {
+            const targetCode =
+              this.db.systemAccessCode && this.db.systemAccessCode !== 'admin123'
+                ? this.db.systemAccessCode
+                : DEFAULT_SYSTEM_ACCESS_CODE;
+            this.db.systemAccessCode = targetCode;
+            this.db.users = this.db.users.map((u) => ({ ...u, password: targetCode }));
+            this.db.users.forEach((u) => {
+              syncUserToCloud(u).catch(() => {});
+            });
+            this.saveLocalOnly(this.db);
+            return;
+          }
+
+          // Adopt the shared passcode from Firestore so ALL devices and users always see the exact same code
+          const canonicalCode = remotePass.length >= 4 ? remotePass : (this.db.systemAccessCode || DEFAULT_SYSTEM_ACCESS_CODE);
+          this.db.systemAccessCode = canonicalCode;
+
+          const admin = this.db.users.find((u) => u.username === 'admin') || INITIAL_USERS[0];
+          const map = new Map<string, User>();
+          this.db.users.forEach((u) => map.set(u.id, { ...u, password: canonicalCode }));
+          remote.forEach((u) => map.set(u.id, { ...u, password: canonicalCode }));
+          const merged = Array.from(map.values());
+          if (admin && !merged.some((u) => u.username === 'admin')) {
+            merged.unshift({ ...admin, password: canonicalCode });
+          }
+          this.db.users = merged;
+          this.saveLocalOnly(this.db);
         },
       });
     } catch (e) {
@@ -950,7 +998,9 @@ class StorageService {
         const stored = window.localStorage.getItem(DB_KEY);
         if (stored) {
           const parsed: SchoolDatabase = JSON.parse(stored);
-          const accessCode = parsed.systemAccessCode || 'admin123';
+          const rawCode = (parsed.systemAccessCode || '').trim();
+          const accessCode =
+            !rawCode || rawCode === 'admin123' ? DEFAULT_SYSTEM_ACCESS_CODE : rawCode;
           parsed.systemAccessCode = accessCode;
           if (!Array.isArray(parsed.deletedIds)) {
             parsed.deletedIds = [];
@@ -984,7 +1034,7 @@ class StorageService {
     }
 
     const initialDb: SchoolDatabase = {
-      systemAccessCode: 'admin123',
+      systemAccessCode: DEFAULT_SYSTEM_ACCESS_CODE,
       users: INITIAL_USERS,
       students: INITIAL_STUDENTS,
       teachers: INITIAL_TEACHERS,
@@ -2054,24 +2104,39 @@ class StorageService {
 
   // Users
   public getSystemAccessCode(): string {
-    return this.db.systemAccessCode || 'admin123';
+    return this.db.systemAccessCode || DEFAULT_SYSTEM_ACCESS_CODE;
   }
 
   public setSystemAccessCode(newCode: string, actorName = 'Admin'): boolean {
     const trimmed = newCode.trim();
     if (trimmed.length < 4) return false;
     this.db.systemAccessCode = trimmed;
-    // Every user must use this single code
+
+    // Ensure root admin exists and every user uses this single shared passcode
+    if (!this.db.users || this.db.users.length === 0) {
+      this.db.users = [...INITIAL_USERS];
+    }
+    if (!this.db.users.some((u) => u.id === 'usr-admin' || u.username === 'admin')) {
+      this.db.users.unshift({ ...INITIAL_USERS[0], password: trimmed });
+    }
+    this.db.users = this.db.users.map((u) => ({
+      ...u,
+      password: trimmed,
+    }));
+
+    // Sync updated shared passcode to Firestore Cloud Database so all devices/users receive it in real time
     this.db.users.forEach((u) => {
-      u.password = trimmed;
+      syncUserToCloud(u).catch((e) => console.warn('Cloud sync user passcode error:', e));
     });
+
     this.logAudit(
       actorName,
       'admin',
       'កែប្រែលេខកូដសម្ងាត់ប្រព័ន្ធរួម',
-      `បានកំណត់លេខកូដសម្ងាត់រួមថ្មីសម្រាប់គ្រប់គណនីទាំងអស់`
+      `បានកំណត់លេខកូដសម្ងាត់រួមថ្មី (${trimmed}) សម្រាប់គ្រប់គណនីទាំងអស់`
     );
     this.saveDatabase(this.db);
+
     // Sync to backend server API
     if (typeof window !== 'undefined' && 'fetch' in window) {
       window.fetch('/api/system/access-code', {

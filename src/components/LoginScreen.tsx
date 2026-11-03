@@ -37,6 +37,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const [liveAccessCode, setLiveAccessCode] = useState(() => storage.getSystemAccessCode());
+
+  useEffect(() => {
+    const unsub = storage.subscribe(() => {
+      setLiveAccessCode(storage.getSystemAccessCode());
+    });
+    return unsub;
+  }, []);
+
   // Quick fill is ONLY available if a user has previously logged in on this browser
   const [rememberedUser, setRememberedUser] = useState<RememberedUser | null>(() => {
     try {
@@ -51,15 +60,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     e.preventDefault();
     setErrorMessage('');
 
-    if (!username.trim() || !password.trim()) {
-      setErrorMessage('សូមបញ្ចូលឈ្មោះគណនី (Username) និងលេខកូដសម្ងាត់ (Passcode)!');
+    if (!password.trim()) {
+      setErrorMessage('សូមបញ្ចូលលេខកូដសម្ងាត់រួម (Passcode)!');
       return;
     }
 
     setIsLoading(true);
+    const targetUsername = username.trim() || 'admin';
 
     setTimeout(() => {
-      const authenticatedUser = storage.authenticate(username.trim(), password.trim());
+      const authenticatedUser = storage.authenticate(targetUsername, password.trim());
       if (authenticatedUser) {
         setSuccessMessage(`សូមស្វាគមន៍ ${authenticatedUser.name}! កំពុងផ្ទៀងផ្ទាត់ចូលប្រព័ន្ធ...`);
         // Save to remembered login for future quick fill
@@ -185,7 +195,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                     autoFocus
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="បញ្ចូលលេខកូដសម្ងាត់រួម (ឧ. admin123)..."
+                    placeholder={`បញ្ចូលលេខកូដសម្ងាត់រួម (ឧ. ${liveAccessCode})...`}
                     className="w-full text-xs pl-10 pr-10 py-2.5 bg-slate-50 border-2 border-amber-300 focus:border-amber-500 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-hidden transition-all text-slate-900 font-mono font-bold"
                   />
                   <button
@@ -246,7 +256,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 className="w-full py-2 px-3 bg-amber-100 hover:bg-amber-200 text-amber-950 text-[11px] font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-amber-300 shadow-2xs"
               >
                 <KeyRound className="w-3.5 h-3.5 text-amber-700" />
-                <span>ចូលប្រើរហ័ស (លេខកូដរួម៖ {storage.getSystemAccessCode()})</span>
+                <span>ចូលប្រើរហ័ស (លេខកូដរួម៖ {liveAccessCode})</span>
               </button>
             </form>
 

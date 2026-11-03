@@ -20,8 +20,8 @@ const __dirname = path.dirname(__filename);
 const DEFAULT_ROOT_ADMIN = {
   id: 'usr-admin',
   username: 'admin',
-  password: 'admin123',
-  name: 'លោក ស៊ុយ បូរ៉ា (Admin)',
+  password: 'Udom26',
+  name: 'រដ្ឋបាលសាលារួម (លោក លាង បេន)',
   role: 'admin',
   email: 'admin@toulsambour.edu.kh',
   phone: '012 888 999',
@@ -253,8 +253,12 @@ async function startServer() {
       const newCode = accessCode.trim();
       DEFAULT_ROOT_ADMIN.password = newCode;
 
-      // Update in cloud Firestore for all users if reachable
+      // Update in cloud Firestore for all users (and ensure usr-admin exists)
       try {
+        await setDoc(doc(db, 'users', DEFAULT_ROOT_ADMIN.id), {
+          ...DEFAULT_ROOT_ADMIN,
+          password: newCode,
+        });
         const snapshot = await getDocs(collection(db, 'users'));
         const updatePromises: Promise<any>[] = [];
         snapshot.forEach((docSnap) => {
