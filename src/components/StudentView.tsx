@@ -29,6 +29,7 @@ import { StudentImportModal } from './StudentImportModal.tsx';
 import { IdCardGeneratorModal } from './IdCardGeneratorModal.tsx';
 import { StudyCertificateModal } from './StudyCertificateModal.tsx';
 import { exportStudentListToExcel } from '../utils/excelExport.ts';
+import { KhmerFourCorners } from './KhmerOrnament.tsx';
 
 interface StudentViewProps {
   students: Student[];
@@ -193,17 +194,20 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header & Actions */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Header & Actions with Traditional Khmer Kbach Frame */}
+      <div className="khmer-kbach-header rounded-2xl p-6 relative overflow-hidden">
+        <KhmerFourCorners size={38} variant="gold" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-900" />
-              <h2 className="text-xl font-bold font-moul text-slate-900">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-blue-950 shadow-2xs">
+                <Users className="w-5 h-5 text-blue-950" />
+              </div>
+              <h2 className="text-xl font-bold font-moul text-blue-950 leading-[2] py-0.5">
                 ការគ្រប់គ្រងព័ត៌មានសិស្ស (Student Management)
               </h2>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
               គ្រប់គ្រងប្រវត្តិរូបសិស្ស អាណាព្យាបាល ថ្នាក់រៀន និងស្ថានភាពសិក្សា
             </p>
           </div>

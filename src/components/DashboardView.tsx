@@ -33,6 +33,7 @@ import { safeAvatar } from '../utils/avatar.ts';
 import { NavTab } from './Sidebar.tsx';
 import { HeroBannerCarousel } from './HeroBannerCarousel.tsx';
 import { storage } from '../services/storage.ts';
+import { KhmerCornerOrnament } from './KhmerOrnament.tsx';
 
 interface DashboardViewProps {
   students: Student[];
@@ -109,75 +110,83 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         }}
       />
 
-      {/* KPI Cards Grid */}
+      {/* KPI Cards Grid with Traditional Khmer Kbach Accents */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Students */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-blue-900/40 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">សិស្សសរុប</span>
-            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
+        <div className="khmer-kbach-card bg-white p-4 rounded-2xl hover:border-amber-500/70 transition-all relative overflow-hidden">
+          <KhmerCornerOrnament position="top-left" size={26} variant="gold" className="opacity-65" />
+          <KhmerCornerOrnament position="bottom-right" size={26} variant="gold" className="opacity-65" />
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-xs font-semibold text-slate-600">សិស្សសរុប</span>
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-800 border border-blue-200/60 flex items-center justify-center">
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">{students.length}</span>
+          <div className="mt-2 flex items-baseline gap-2 relative z-10">
+            <span className="text-2xl font-bold text-blue-950">{students.length}</span>
             <span className="text-xs text-slate-500">នាក់</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400 flex items-center justify-between border-t border-slate-100 pt-2">
+          <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between border-t border-amber-100 pt-2 relative z-10">
             <span>ស្រី {students.filter((s) => s.gender === 'ស្រី').length} នាក់</span>
-            <span className="text-emerald-600 font-medium">១០០% ចូលរៀន</span>
+            <span className="text-emerald-600 font-semibold">១០០% ចូលរៀន</span>
           </div>
         </div>
 
         {/* Total Teachers */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-blue-900/40 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">គ្រូបង្រៀនសរុប</span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
+        <div className="khmer-kbach-card bg-white p-4 rounded-2xl hover:border-amber-500/70 transition-all relative overflow-hidden">
+          <KhmerCornerOrnament position="top-left" size={26} variant="gold" className="opacity-65" />
+          <KhmerCornerOrnament position="bottom-right" size={26} variant="gold" className="opacity-65" />
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-xs font-semibold text-slate-600">គ្រូបង្រៀនសរុប</span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200/60 flex items-center justify-center">
               <GraduationCap className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">{teachers.length}</span>
+          <div className="mt-2 flex items-baseline gap-2 relative z-10">
+            <span className="text-2xl font-bold text-blue-950">{teachers.length}</span>
             <span className="text-xs text-slate-500">រូប</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400 flex items-center justify-between border-t border-slate-100 pt-2">
+          <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between border-t border-amber-100 pt-2 relative z-10">
             <span>ស្រី {teachers.filter((t) => t.gender === 'ស្រី').length} រូប</span>
-            <span className="text-blue-700 font-medium">ពេញម៉ោង</span>
+            <span className="text-blue-800 font-semibold">ពេញម៉ោង</span>
           </div>
         </div>
 
         {/* Classes */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-blue-900/40 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">ថ្នាក់រៀនសរុប</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+        <div className="khmer-kbach-card bg-white p-4 rounded-2xl hover:border-amber-500/70 transition-all relative overflow-hidden">
+          <KhmerCornerOrnament position="top-left" size={26} variant="gold" className="opacity-65" />
+          <KhmerCornerOrnament position="bottom-right" size={26} variant="gold" className="opacity-65" />
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-xs font-semibold text-slate-600">ថ្នាក់រៀនសរុប</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/60 flex items-center justify-center">
               <School className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">{classes.length}</span>
+          <div className="mt-2 flex items-baseline gap-2 relative z-10">
+            <span className="text-2xl font-bold text-blue-950">{classes.length}</span>
             <span className="text-xs text-slate-500">ថ្នាក់</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400 flex items-center justify-between border-t border-slate-100 pt-2">
+          <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between border-t border-amber-100 pt-2 relative z-10">
             <span>ថ្នាក់ទី ៧, ៨ និង ៩</span>
-            <span className="text-slate-600 font-medium">កម្រិតអនុវិទ្យាល័យ</span>
+            <span className="text-amber-800 font-semibold">កម្រិតអនុវិទ្យាល័យ</span>
           </div>
         </div>
 
         {/* Attendance Rate */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-blue-900/40 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">ភាគរយវត្តមានថ្ងៃនេះ</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+        <div className="khmer-kbach-card bg-white p-4 rounded-2xl hover:border-amber-500/70 transition-all relative overflow-hidden">
+          <KhmerCornerOrnament position="top-left" size={26} variant="gold" className="opacity-65" />
+          <KhmerCornerOrnament position="bottom-right" size={26} variant="gold" className="opacity-65" />
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-xs font-semibold text-slate-600">ភាគរយវត្តមានថ្ងៃនេះ</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-800 border border-amber-200/60 flex items-center justify-center">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
+          <div className="mt-2 flex items-baseline gap-2 relative z-10">
             <span className="text-2xl font-bold text-blue-950">{todayStats.attendanceRate}%</span>
-            <span className="text-xs text-emerald-600 font-medium">ខ្ពស់</span>
+            <span className="text-xs text-emerald-600 font-semibold">ខ្ពស់</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400 flex items-center justify-between border-t border-slate-100 pt-2">
+          <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between border-t border-amber-100 pt-2 relative z-10">
             <span>វត្តមាន {todayStats.present} នាក់</span>
             <span>មកយឺត {todayStats.late} នាក់</span>
           </div>

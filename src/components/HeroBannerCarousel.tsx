@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { BannerSlide } from '../types/index.ts';
 import { storage } from '../services/storage.ts';
+import { KhmerFourCorners } from './KhmerOrnament.tsx';
 
 interface HeroBannerCarouselProps {
   banners: BannerSlide[];
@@ -173,8 +174,11 @@ export const HeroBannerCarousel: React.FC<HeroBannerCarouselProps> = ({
         <div
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className={`relative rounded-3xl overflow-hidden text-white bg-gradient-to-r ${currentSlide.gradient} shadow-2xl transition-all duration-700 min-h-[220px] sm:min-h-[240px] flex flex-col justify-between`}
+          className={`relative rounded-3xl overflow-hidden text-white bg-gradient-to-r ${currentSlide.gradient} shadow-2xl transition-all duration-700 min-h-[235px] sm:min-h-[255px] flex flex-col justify-between border border-amber-400/35`}
         >
+          {/* Traditional Golden Khmer Kbach 4-Corner Ornaments */}
+          <KhmerFourCorners size={44} variant="gold" />
+
           {/* Background School Photography / Texture with Gradient Overlay */}
           {currentSlide.imageUrl && (
             <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">

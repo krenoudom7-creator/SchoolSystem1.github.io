@@ -17,6 +17,7 @@ import { User, UserRole, NotificationItem } from '../types/index.ts';
 import { formatKhmerDate, getTodayLocalStr } from '../utils/calculations.ts';
 import { safeAvatar, DEFAULT_ADMIN_AVATAR, SCHOOL_LOGO_URL } from '../utils/avatar.ts';
 import { storage } from '../services/storage.ts';
+import { KhmerBorderStrip, KhmerCornerOrnament } from './KhmerOrnament.tsx';
 
 interface HeaderProps {
   currentUser: User;
@@ -70,35 +71,41 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs no-print">
+    <header className="bg-gradient-to-r from-white via-amber-50/35 to-white sticky top-0 z-30 shadow-sm no-print relative">
+      {/* Subtle Khmer Corner Ornaments on Top Header */}
+      <KhmerCornerOrnament position="top-left" size={32} variant="gold" className="opacity-70 hidden sm:block" />
+      <KhmerCornerOrnament position="top-right" size={32} variant="gold" className="opacity-70 hidden sm:block" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between min-h-[78px] py-2.5 gap-3">
           {/* Brand & Subtitle */}
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full p-0.5 bg-white border-2 border-amber-400 shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+          <div className="flex items-center space-x-3.5 min-w-0">
+            <div className="w-13 h-13 rounded-full p-0.5 bg-white border-2 border-amber-400 ring-2 ring-amber-200/70 shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               <img
                 src={SCHOOL_LOGO_URL}
                 alt="Logo អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ"
                 className="w-full h-full object-cover scale-[1.38] rounded-full"
               />
             </div>
-            <div>
+            <div className="min-w-0 py-0.5">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="font-moul text-sm sm:text-base text-blue-950 tracking-wide font-bold">
+                <h1 className="font-moul text-sm sm:text-base text-blue-950 tracking-wide font-bold leading-[2] py-0.5">
                   អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ
                 </h1>
-                <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 rounded-sm">
-                  ឆ្នាំសិក្សា ២០២៥-២០២៦
+                <span className="hidden sm:inline-block px-2.5 py-0.5 text-[11px] font-semibold bg-amber-100/90 text-amber-900 border border-amber-300 rounded-md leading-relaxed">
+                  ❖ ឆ្នាំសិក្សា ២០២៥-២០២៦
                 </span>
                 {/* RGB Glow Online Pill */}
-                <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold text-slate-800 bg-white border border-emerald-400 rounded-full shadow-xs rgb-glow-pill">
+                <span className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold text-slate-800 bg-white border border-emerald-400 rounded-full shadow-xs rgb-glow-pill leading-relaxed">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 -ml-2.5"></span>
                   <span>Cloud Database Live</span>
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium">
-                Hun Sen Toulsambour Secondary School · ឃុំទួលសំបួរ ស្រុកស្ទឹងត្រង់
+              <p className="text-[11px] text-slate-600 font-medium leading-relaxed mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <span className="text-amber-700 font-semibold">ព្រះរាជាណាចក្រកម្ពុជា · ជាតិ សាសនា ព្រះមហាក្សត្រ</span>
+                <span className="text-slate-300">|</span>
+                <span>ឃុំទួលសំបួរ ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម</span>
               </p>
             </div>
           </div>
@@ -331,6 +338,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+      <KhmerBorderStrip position="bottom" />
     </header>
   );
 };

@@ -15,6 +15,7 @@ import {
 import { SchoolClass, Teacher, Student, EducationLevelType } from '../types/index.ts';
 import { storage } from '../services/storage.ts';
 import { safeAvatar, DEFAULT_TEACHER_AVATAR, DEFAULT_STUDENT_AVATAR } from '../utils/avatar.ts';
+import { KhmerFourCorners, KhmerCornerOrnament } from './KhmerOrnament.tsx';
 
 interface ClassViewProps {
   classes: SchoolClass[];
@@ -150,17 +151,20 @@ export const ClassView: React.FC<ClassViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Header with Traditional Khmer Kbach Frame */}
+      <div className="khmer-kbach-header rounded-2xl p-6 relative overflow-hidden">
+        <KhmerFourCorners size={38} variant="gold" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2">
-              <School className="w-5 h-5 text-blue-900" />
-              <h2 className="text-xl font-bold font-moul text-slate-900">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-blue-950 shadow-2xs">
+                <School className="w-5 h-5 text-blue-950" />
+              </div>
+              <h2 className="text-xl font-bold font-moul text-blue-950 leading-[2] py-0.5">
                 ការគ្រប់គ្រងថ្នាក់រៀន និងកម្រិតអប់រំ
               </h2>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
               គាំទ្រកម្រិតមត្តេយ្យ បឋមសិក្សា អនុវិទ្យាល័យ វិទ្យាល័យ និងឧត្តមសិក្សា (សិស្សសរុបក្នុងប្រព័ន្ធ៖{' '}
               <strong className="text-blue-900">{students.length} នាក់</strong>)
             </p>
@@ -169,7 +173,7 @@ export const ClassView: React.FC<ClassViewProps> = ({
           <button
             type="button"
             onClick={handleOpenAdd}
-            className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>បង្កើតថ្នាក់រៀនថ្មី</span>
@@ -177,13 +181,13 @@ export const ClassView: React.FC<ClassViewProps> = ({
         </div>
 
         {/* Level Filters */}
-        <div className="flex items-center gap-2 mt-5 pt-4 border-t border-slate-100 flex-wrap">
+        <div className="flex items-center gap-2 mt-5 pt-4 border-t border-amber-200/70 flex-wrap relative z-10">
           <button
             onClick={() => setSelectedLevelFilter('all')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+            className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
               selectedLevelFilter === 'all'
-                ? 'bg-blue-950 text-white'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-blue-950 text-amber-300 border border-amber-400/50 shadow-xs'
+                : 'bg-white/90 text-slate-700 border border-amber-200/80 hover:bg-amber-50'
             }`}
           >
             គ្រប់កម្រិតទាំងអស់ ({classes.length})
@@ -192,10 +196,10 @@ export const ClassView: React.FC<ClassViewProps> = ({
             <button
               key={lvl.type}
               onClick={() => setSelectedLevelFilter(lvl.type)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                 selectedLevelFilter === lvl.type
-                  ? 'bg-blue-950 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-blue-950 text-amber-300 border border-amber-400/50 shadow-xs'
+                  : 'bg-white/90 text-slate-700 border border-amber-200/80 hover:bg-amber-50'
               }`}
             >
               {lvl.label}
@@ -222,15 +226,17 @@ export const ClassView: React.FC<ClassViewProps> = ({
           return (
             <div
               key={cls.id}
-              className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs hover:border-blue-900/40 transition-all flex flex-col justify-between"
+              className="khmer-kbach-card bg-white rounded-2xl p-5 hover:border-amber-500/70 transition-all flex flex-col justify-between relative overflow-hidden"
             >
-              <div>
+              <KhmerCornerOrnament position="top-left" size={28} variant="gold" className="opacity-65" />
+              <KhmerCornerOrnament position="bottom-right" size={28} variant="gold" className="opacity-65" />
+              <div className="relative z-10">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="text-[10px] font-semibold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-sm">
-                      {cls.gradeLevel} · អនុវិទ្យាល័យ
+                    <span className="text-[10px] font-semibold text-amber-900 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-md inline-block">
+                      ❖ {cls.gradeLevel} · អនុវិទ្យាល័យ
                     </span>
-                    <h3 className="text-base font-bold font-moul text-slate-900 mt-1.5">{cls.name}</h3>
+                    <h3 className="text-base font-bold font-moul text-blue-950 mt-1.5 leading-[2] py-0.5">{cls.name}</h3>
                   </div>
 
                   <div className="flex items-center gap-1.5">

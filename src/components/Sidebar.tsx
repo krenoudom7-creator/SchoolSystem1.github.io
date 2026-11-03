@@ -169,34 +169,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const visibleItems = navItems;
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-100 flex-shrink-0 flex flex-col justify-between border-r border-slate-800 no-print min-h-[calc(100vh-4rem)]">
+    <aside className="w-68 bg-slate-900 text-slate-100 flex-shrink-0 flex flex-col justify-between border-r border-amber-500/25 no-print min-h-[calc(100vh-4.8rem)]">
       <div className="p-3">
-        {/* School Logo Brand Card */}
-        <div className="mb-3 p-3 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-slate-700/60 shadow-xs flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full p-0.5 bg-white border-2 border-amber-400 shadow-sm flex items-center justify-center flex-shrink-0 overflow-hidden">
-            <img
-              src={SCHOOL_LOGO_URL}
-              alt="Logo អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ"
-              className="w-full h-full object-cover scale-[1.38] rounded-full"
-            />
+        {/* School Logo Brand Card with Khmer Kbach Gold Frame */}
+        <div className="mb-3 p-3.5 bg-gradient-to-br from-slate-800 via-slate-900 to-amber-950/30 rounded-2xl border border-amber-400/45 shadow-md relative overflow-hidden">
+          <div className="flex items-center gap-3 relative z-10">
+            <div className="w-12 h-12 rounded-full p-0.5 bg-white border-2 border-amber-400 shadow-sm flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <img
+                src={SCHOOL_LOGO_URL}
+                alt="Logo អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ"
+                className="w-full h-full object-cover scale-[1.38] rounded-full"
+              />
+            </div>
+            <div className="min-w-0 flex-1 py-0.5">
+              <div className="font-moul text-xs text-amber-400 font-bold leading-[2] py-0.5">
+                អនុវិទ្យាល័យ ហ៊ុន សែន
+              </div>
+              <div className="text-[11px] text-amber-100/90 font-medium leading-relaxed">
+                ទួលសំបួរ · ស្ទឹងត្រង់
+              </div>
+            </div>
           </div>
-          <div className="min-w-0">
-            <div className="font-moul text-xs text-amber-400 font-bold truncate">
-              អនុវិទ្យាល័យ ហ៊ុន សែន
-            </div>
-            <div className="text-[10px] text-slate-300 font-medium truncate">
-              ទួលសំបួរ · ស្ទឹងត្រង់
-            </div>
+          {/* Traditional Khmer Diamond Divider inside Brand Card */}
+          <div className="mt-2 pt-1.5 border-t border-amber-400/20 flex items-center justify-center gap-2 text-[10px] text-amber-300/85 font-medium">
+            <span>❖</span>
+            <span>សិក្សា · វិន័យ · សីលធម៌</span>
+            <span>❖</span>
           </div>
         </div>
 
         {/* Navigation Category Label */}
-        <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-          ម៉ឺនុយចម្បង (Navigation)
+        <div className="px-3 py-1.5 text-[11px] font-semibold text-amber-400/90 uppercase tracking-wider flex items-center gap-1.5 leading-relaxed">
+          <span>❖</span>
+          <span>ម៉ឺនុយចម្បង (Navigation)</span>
         </div>
 
         {/* Links */}
-        <nav className="space-y-1">
+        <nav className="space-y-1.5 mt-1">
           {visibleItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
@@ -207,13 +216,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => onSelectTab(item.id)}
                 className={`w-full group flex items-center justify-between px-3 py-2.5 text-xs rounded-xl font-medium transition-all text-left cursor-pointer ${
                   isActive
-                    ? 'bg-amber-400 text-slate-950 font-semibold shadow-sm'
+                    ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold shadow-md ring-1 ring-amber-300'
                     : item.isHighlighted
                     ? 'bg-blue-900/60 text-blue-100 hover:bg-blue-800/80 border border-blue-700/50'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    : 'text-slate-200 hover:bg-slate-800/90 hover:text-white'
                 }`}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <Icon
                     className={`w-4 h-4 flex-shrink-0 ${
                       isActive
@@ -223,11 +232,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         : 'text-slate-400 group-hover:text-amber-400'
                     }`}
                   />
-                  <div className="truncate">
-                    <div className="truncate">{item.label}</div>
+                  <div className="min-w-0 flex-1 py-0.5">
+                    <div className="leading-[1.85] break-words">{item.label}</div>
                     <div
-                      className={`text-[10px] truncate ${
-                        isActive ? 'text-slate-800 font-normal' : 'text-slate-400'
+                      className={`text-[10px] leading-relaxed truncate ${
+                        isActive ? 'text-slate-900 font-medium' : 'text-slate-400'
                       }`}
                     >
                       {item.sublabel}
@@ -237,7 +246,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 {item.badge && (
                   <span
-                    className={`px-1.5 py-0.5 text-[9px] font-bold rounded-md flex-shrink-0 ${
+                    className={`px-1.5 py-0.5 text-[9px] font-bold rounded-md flex-shrink-0 leading-normal ${
                       isActive ? 'bg-slate-900 text-amber-300' : item.badgeColor || 'bg-slate-800 text-slate-300'
                     }`}
                   >
@@ -251,13 +260,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* School Footer info */}
-      <div className="p-3 border-t border-slate-800/80 bg-slate-950/40">
-        <div className="px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+      <div className="p-3 border-t border-amber-500/20 bg-slate-950/60">
+        <div className="px-3 py-2.5 bg-slate-800/60 rounded-xl border border-amber-400/25">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-            <span className="text-[11px] font-semibold text-slate-300">ប្រព័ន្ធដំណើរការធម្មតា</span>
+            <span className="text-[11px] font-semibold text-amber-300 leading-relaxed">ប្រព័ន្ធដំណើរការធម្មតា</span>
           </div>
-          <div className="text-[10px] text-slate-400 mt-1">
+          <div className="text-[10px] text-slate-300 mt-1 leading-relaxed">
             កំណែទម្រង់ ២.៥ · អនុវិទ្យាល័យទួលសំបួរ
           </div>
         </div>

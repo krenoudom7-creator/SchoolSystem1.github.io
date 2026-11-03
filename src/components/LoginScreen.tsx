@@ -16,6 +16,7 @@ import { storage } from '../services/storage.ts';
 import { User } from '../types/index.ts';
 import { SCHOOL_LOGO_URL } from '../utils/schoolLogo.ts';
 import { safeAvatar, DEFAULT_ADMIN_AVATAR } from '../utils/avatar.ts';
+import { KhmerFourCorners, KhmerDivider } from './KhmerOrnament.tsx';
 
 interface LoginScreenProps {
   onLoginSuccess: (user: User) => void;
@@ -108,10 +109,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
       <div className="relative z-10 w-full max-w-md">
         {/* Main Card */}
-        <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 p-6 sm:p-8">
+        <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border-2 border-amber-400/50 p-6 sm:p-8 relative overflow-hidden">
+          <KhmerFourCorners size={44} variant="gold" />
           {/* Logo & School Header */}
-          <div className="text-center pb-5 border-b border-slate-100">
-            <div className="w-24 h-24 mx-auto mb-3.5 p-0.5 rounded-full bg-white shadow-xl border-2 border-amber-400 flex items-center justify-center overflow-hidden">
+          <div className="text-center pb-5 border-b border-amber-200/70 relative z-10">
+            <div className="text-[11px] font-bold text-amber-800 tracking-wide mb-2">
+              ព្រះរាជាណាចក្រកម្ពុជា · ជាតិ សាសនា ព្រះមហាក្សត្រ
+            </div>
+            <div className="w-24 h-24 mx-auto mb-3.5 p-0.5 rounded-full bg-white shadow-xl border-2 border-amber-400 ring-4 ring-amber-100 flex items-center justify-center overflow-hidden">
               <img
                 src={SCHOOL_LOGO_URL}
                 alt="Logo អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ"
@@ -119,16 +124,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               />
             </div>
             <div className="inline-block px-2.5 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200 rounded-full mb-1.5">
-              ឆ្នាំសិក្សា ២០២៥ - ២០២៦
+              ❖ ឆ្នាំសិក្សា ២០២៥ - ២០២៦ ❖
             </div>
-            <h1 className="font-moul text-base sm:text-lg text-blue-950 font-bold leading-relaxed">
+            <h1 className="font-moul text-base sm:text-lg text-blue-950 font-bold leading-[2] py-0.5">
               អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ
             </h1>
+            <KhmerDivider className="my-1.5" variant="gold" width="w-48" />
             <p className="text-xs text-slate-500 font-medium mt-0.5">
               Toulsambour Secondary School Management System
             </p>
-            <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-lg text-[11px] font-semibold text-slate-700">
-              <KeyRound className="w-3.5 h-3.5 text-blue-900" />
+            <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200/80 rounded-lg text-[11px] font-semibold text-amber-950">
+              <KeyRound className="w-3.5 h-3.5 text-amber-700" />
               <span>ផ្ទាំងចូលប្រើប្រព័ន្ធរដ្ឋបាលសាលា (Portal Login)</span>
             </div>
           </div>

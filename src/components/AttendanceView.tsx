@@ -28,6 +28,7 @@ import {
   User,
 } from '../types/index.ts';
 import { storage } from '../services/storage.ts';
+import { KhmerFourCorners } from './KhmerOrnament.tsx';
 import {
   formatKhmerDate,
   getAttendanceStatusBadge,
@@ -291,15 +292,16 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Title & Banner */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Title & Banner with Traditional Khmer Kbach Frame */}
+      <div className="khmer-kbach-header rounded-2xl p-6 relative overflow-hidden">
+        <KhmerFourCorners size={38} variant="gold" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
               <span className="w-2 h-2 rounded-full bg-emerald-600 -ml-4"></span>
               <span className="text-xs font-semibold text-blue-900 uppercase tracking-wider">
-                អនុវិទ្យាល័យទួលសំបួរ · ប្រព័ន្ធកត់ត្រាវត្តមាន និងអវត្តមាន
+                ❖ អនុវិទ្យាល័យទួលសំបួរ · ប្រព័ន្ធកត់ត្រាវត្តមាន និងអវត្តមាន
               </span>
               {isToday ? (
                 <span className="px-2.5 py-0.5 text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full">
@@ -311,10 +313,10 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                 </span>
               )}
             </div>
-            <h2 className="text-xl font-bold font-moul text-slate-900 mt-1.5">
+            <h2 className="text-xl font-bold font-moul text-blue-950 mt-1.5 leading-[2] py-0.5">
               កត់ត្រាវត្តមាន និងអវត្តមានសិស្សប្រចាំថ្ងៃ (ដើរតាមថ្ងៃបច្ចុប្បន្ន & គ្រប់ខែទាំង ១២)
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
               កំណត់ស្ថានភាពវត្តមាន ៥ កម្រិត ដើរតាមកាលបរិច្ឆេទបច្ចុប្បន្នស្វ័យប្រវត្តិ មើលសរុបអវត្តមានគ្រប់ខែទាំង ១២ និងផ្ញើសារ Telegram ទៅអាណាព្យាបាល
             </p>
           </div>
