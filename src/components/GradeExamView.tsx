@@ -27,6 +27,7 @@ import {
 import { storage } from '../services/storage.ts';
 import { calculateRankings } from '../utils/calculations.ts';
 import { safeAvatar } from '../utils/avatar.ts';
+import { exportExamReportToExcel } from '../utils/excelExport.ts';
 
 interface GradeExamViewProps {
   students: Student[];
@@ -283,31 +284,28 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
 
   const currentResults = storage.getExamResults(selectedExamId, selectedClassId);
 
-  // Export to CSV
-  const handleExportCsv = () => {
-    const headers = ['ចំណាត់ថ្នាក់', 'អត្តលេខ', 'ឈ្មោះសិស្ស', 'ពិន្ទុសរុប', 'មធ្យមភាគ', 'និទ្ទេស', 'ការវាយតម្លៃ'];
-    const rows = currentResults.map((r) => {
+  // Export to Official Excel (.xlsx)
+  const handleExportCsv = async () => {
+    const formattedResults = currentResults.map((r) => {
       const s = students.find((item) => item.id === r.studentId);
-      return [
-        `"លេខ ${r.rank}"`,
-        s?.studentId || '',
-        `"${r.studentName || s?.khmerName}"`,
-        r.totalScore,
-        r.average,
-        r.gradeLetter,
-        `"${r.remarks}"`,
-      ];
+      return {
+        rank: r.rank,
+        studentCode: s?.studentId || '',
+        studentName: r.studentName || s?.khmerName || '',
+        totalScore: r.totalScore,
+        average: r.average,
+        gradeLetter: r.gradeLetter,
+        remarks: r.remarks || '',
+      };
     });
 
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `តារាងចំណាត់ថ្នាក់ពិន្ទុ_${currentExam?.title || ''}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    await exportExamReportToExcel({
+      examTitle: currentExam?.title || 'ការប្រឡងប្រចាំខែ',
+      className: currentClass?.name || 'គ្រប់ថ្នាក់រៀន',
+      roomNumber: currentClass?.roomNumber || '១០១',
+      results: formattedResults,
+      filename: `តារាងចំណាត់ថ្នាក់ពិន្ទុ_${currentExam?.title || 'សិស្ស'}.xlsx`,
+    });
   };
 
   return (
@@ -348,10 +346,10 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
             <button
               type="button"
               onClick={handleExportCsv}
-              className="px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              <span>ទាញយក Excel (CSV)</span>
+              <span>ទាញយកជា Excel (.xlsx)</span>
             </button>
 
             <button

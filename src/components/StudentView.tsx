@@ -28,6 +28,7 @@ import { safeAvatar, DEFAULT_STUDENT_AVATAR } from '../utils/avatar.ts';
 import { StudentImportModal } from './StudentImportModal.tsx';
 import { IdCardGeneratorModal } from './IdCardGeneratorModal.tsx';
 import { StudyCertificateModal } from './StudyCertificateModal.tsx';
+import { exportStudentListToExcel } from '../utils/excelExport.ts';
 
 interface StudentViewProps {
   students: Student[];
@@ -176,34 +177,18 @@ export const StudentView: React.FC<StudentViewProps> = ({
     );
   };
 
-  // Export students to CSV
-  const handleExportCsv = () => {
-    const headers = ['លេខសម្គាល់', 'ឈ្មោះខ្មែរ', 'ឈ្មោះឡាតាំង', 'ភេទ', 'ថ្ងៃខែឆ្នាំកំណើត', 'ថ្នាក់', 'អាណាព្យាបាល', 'លេខទូរស័ព្ទ', 'អាសយដ្ឋាន', 'ស្ថានភាព'];
-    const rows = filteredStudents.map((s) => {
-      const c = classes.find((item) => item.id === s.classId);
-      return [
-        s.studentId,
-        `"${s.khmerName}"`,
-        `"${s.latinName}"`,
-        s.gender,
-        s.dob,
-        `"${c?.name || ''}"`,
-        `"${s.parentName} (${s.parentRelationship})"`,
-        s.parentPhone,
-        `"${s.address}"`,
-        s.status,
-      ];
-    });
+  // Export students to Official Excel (.xlsx)
+  const handleExportCsv = async () => {
+    const selectedClassName =
+      selectedClassId === 'all'
+        ? 'គ្រប់ថ្នាក់រៀនទាំងអស់'
+        : classes.find((c) => c.id === selectedClassId)?.name || selectedClassId;
 
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `បញ្ជីឈ្មោះសិស្ស_អនុវិទ្យាល័យទួលសំបួរ.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    await exportStudentListToExcel({
+      students: filteredStudents,
+      classes,
+      selectedClassName,
+    });
   };
 
   return (
@@ -236,10 +221,10 @@ export const StudentView: React.FC<StudentViewProps> = ({
             <button
               type="button"
               onClick={handleExportCsv}
-              className="px-3.5 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
             >
-              <Download className="w-4 h-4 text-slate-600" />
-              <span>ទាញយក CSV</span>
+              <Download className="w-4 h-4" />
+              <span>ទាញយកជា Excel (.xlsx)</span>
             </button>
 
             <button

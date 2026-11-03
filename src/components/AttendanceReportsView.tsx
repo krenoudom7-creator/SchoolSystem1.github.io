@@ -31,6 +31,7 @@ import {
   toKhmerNum,
 } from '../utils/calculations.ts';
 import { safeAvatar } from '../utils/avatar.ts';
+import { exportAttendanceReportToExcel } from '../utils/excelExport.ts';
 
 interface AttendanceReportsViewProps {
   students: Student[];
@@ -138,95 +139,6 @@ export const AttendanceReportsView: React.FC<AttendanceReportsViewProps> = ({
       };
     });
 
-  // Export to CSV / Excel helper
-  const handleExportCsv = () => {
-    if (reportType === 'monthly' || reportType === 'yearly_12months') {
-      const headers = [
-        'ល.រ',
-        'អត្តលេខ',
-        'ឈ្មោះសិស្ស',
-        'ភេទ',
-        'ថ្នាក់',
-        'ខែ/ឆ្នាំ',
-        'មានវត្តមាន',
-        'អវត្តមានមានច្បាប់',
-        'អវត្តមានឥតច្បាប់',
-        'មកយឺត',
-        'សរុបអវត្តមាន',
-        'ភាគរយវត្តមាន (%)',
-      ];
-      const periodLabel =
-        selectedMonth === 'all' || reportType === 'yearly_12months'
-          ? `គ្រប់ខែទាំង ១២ (${selectedYear})`
-          : `ខែ${getKhmerMonthName(selectedMonth)} ${selectedYear}`;
-
-      const rows = studentSummaries.map((item, idx) => [
-        idx + 1,
-        item.student.studentId,
-        `"${item.student.khmerName}"`,
-        item.student.gender,
-        `"${item.className}"`,
-        `"${periodLabel}"`,
-        item.stats.present,
-        item.stats.absentPermission,
-        item.stats.absentNoPermission,
-        item.stats.late,
-        item.stats.absentPermission + item.stats.absentNoPermission,
-        `${item.stats.attendanceRate}%`,
-      ]);
-
-      const csvContent =
-        '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute(
-        'download',
-        `របាយការណ៍អវត្តមានប្រចាំខែ_${getKhmerMonthName(selectedMonth)}_${selectedYear}.csv`
-      );
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      return;
-    }
-
-    const headers = [
-      'លេខសម្គាល់',
-      'ឈ្មោះសិស្ស',
-      'ថ្នាក់',
-      'កាលបរិច្ឆេទ',
-      'ស្ថានភាពវត្តមាន',
-      'មូលហេតុ',
-      'កត់ត្រាដោយ',
-    ];
-    const rows = filteredRecords.map((r) => {
-      const s = students.find((item) => item.id === r.studentId);
-      const c = classes.find((item) => item.id === r.classId);
-      const badge = getAttendanceStatusBadge(r.status);
-      return [
-        s?.studentId || '',
-        `"${s?.khmerName || r.studentName || ''}"`,
-        `"${c?.name || ''}"`,
-        r.date,
-        `"${badge.label}"`,
-        `"${r.reason || ''}"`,
-        `"${r.recordedByName || ''}"`,
-      ];
-    });
-
-    const csvContent =
-      '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `របាយការណ៍វត្តមាន_អនុវិទ្យាល័យទួលសំបួរ_${selectedDate}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const selectedClassName =
     selectedClassId === 'all'
       ? 'គ្រប់ថ្នាក់រៀនទាំងអស់'
@@ -238,6 +150,34 @@ export const AttendanceReportsView: React.FC<AttendanceReportsViewProps> = ({
       : reportType === 'yearly_12months' || selectedMonth === 'all'
       ? `គ្រប់ខែទាំង ១២ ឆ្នាំ ${toKhmerNum(selectedYear)}`
       : `ខែ${getKhmerMonthName(selectedMonth)} ឆ្នាំ ${toKhmerNum(selectedYear)}`;
+
+  // Export to Official Excel (.xlsx) with MoEYS header, School Logo, and Table
+  const handleExportCsv = async () => {
+    const detailedRecords = filteredRecords.map((r) => {
+      const s = students.find((item) => item.id === r.studentId);
+      const c = classes.find((item) => item.id === r.classId);
+      return {
+        ...r,
+        studentCode: s?.studentId || '',
+        studentName: s?.khmerName || r.studentName || '',
+        className: c?.name || '',
+      };
+    });
+
+    await exportAttendanceReportToExcel({
+      reportSubType: reportType,
+      periodTitle: activePeriodTitle,
+      className: selectedClassName,
+      attendanceRate: stats.attendanceRate ?? 100,
+      selectedYear,
+      studentSummaries,
+      records: detailedRecords,
+      filename:
+        reportType === 'daily'
+          ? `របាយការណ៍វត្តមាន_អនុវិទ្យាល័យទួលសំបួរ_${selectedDate}.xlsx`
+          : `របាយការណ៍អវត្តមាន_${getKhmerMonthName(selectedMonth)}_${selectedYear}.xlsx`,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -266,7 +206,7 @@ export const AttendanceReportsView: React.FC<AttendanceReportsViewProps> = ({
               className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              <span>ទាញយក Excel (CSV)</span>
+              <span>ទាញយកជា Excel (.xlsx)</span>
             </button>
 
             <button

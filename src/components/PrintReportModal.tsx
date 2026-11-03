@@ -1,8 +1,12 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Printer, X, Download, School, CheckCircle2 } from 'lucide-react';
+import { Printer, X, Download } from 'lucide-react';
 import { formatKhmerDate, getAttendanceStatusBadge, getTodayLocalStr } from '../utils/calculations.ts';
 import { SCHOOL_LOGO_URL } from '../utils/schoolLogo.ts';
+import {
+  exportAttendanceReportToExcel,
+  exportExamReportToExcel,
+} from '../utils/excelExport.ts';
 
 interface PrintReportModalProps {
   isOpen: boolean;
@@ -49,6 +53,27 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
     }, 50);
   };
 
+  const handleDownloadExcel = async () => {
+    if (reportType === 'attendance') {
+      await exportAttendanceReportToExcel({
+        reportSubType: data.reportSubType || 'monthly',
+        periodTitle: data.periodTitle || formatKhmerDate(data.date || todayStr),
+        className: data.className || (data.classId === 'all' ? 'គ្រប់ថ្នាក់រៀនទាំងអស់' : data.classId),
+        attendanceRate: data.stats?.attendanceRate ?? 100,
+        selectedYear: data.year || '2026',
+        studentSummaries: data.studentSummaries || [],
+        records: data.records || [],
+      });
+    } else {
+      await exportExamReportToExcel({
+        examTitle: data.exam?.title || 'ការប្រឡងប្រចាំខែ',
+        className: data.classInfo?.name || 'ថ្នាក់ទី ៧ ក',
+        roomNumber: data.classInfo?.roomNumber || '១០១',
+        results: data.results || [],
+      });
+    }
+  };
+
   return createPortal(
     <div
       id="official-print-modal-overlay"
@@ -59,15 +84,24 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
         className="bg-white rounded-2xl max-w-4xl w-full p-8 shadow-2xl my-8 print:shadow-none print:p-0 print:my-0 print:max-w-none"
       >
         {/* Controls: hidden during print */}
-        <div className="no-print flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
+        <div className="no-print flex items-center justify-between pb-4 mb-6 border-b border-slate-200 flex-wrap gap-3">
           <div className="flex items-center gap-2">
             <Printer className="w-5 h-5 text-blue-900" />
             <h3 className="text-sm font-bold font-moul text-slate-900">
               ទម្រង់បោះពុម្ពផ្លូវការ A4 (Official Print Preview)
             </h3>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <button
+              type="button"
+              onClick={handleDownloadExcel}
+              className="px-4 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 flex items-center gap-1.5 shadow-sm cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              <span>ទាញយកជា Excel (.xlsx)</span>
+            </button>
+            <button
+              type="button"
               onClick={handlePrint}
               className="px-4 py-2 text-xs font-semibold bg-blue-900 text-white rounded-xl hover:bg-blue-800 flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
@@ -75,6 +109,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
               <span>បោះពុម្ព (Print / Save as PDF)</span>
             </button>
             <button
+              type="button"
               onClick={onClose}
               className="p-2 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
             >
