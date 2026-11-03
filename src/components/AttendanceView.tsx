@@ -137,13 +137,78 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   };
 
   const handleScanMarkAttendance = (studentId: string, status: AttendanceStatus) => {
-    setAttendanceState((prev) => ({
-      ...prev,
-      [studentId]: {
-        status,
-        reason: prev[studentId]?.reason || 'ស្កេនតាម QR Code / Barcode Scanner',
-      },
-    }));
+    const scannedStudent = students.find((s) => s.id === studentId || s.studentId === studentId);
+    const targetClassId = scannedStudent?.classId || selectedClassId;
+
+    if (targetClassId && targetClassId !== selectedClassId) {
+      setSelectedClassId(targetClassId);
+    }
+
+    const scanReason = 'ស្កេនតាម QR Code / Barcode Scanner';
+
+    setAttendanceState((prev) => {
+      const updated = {
+        ...prev,
+        [studentId]: {
+          status,
+          reason: prev[studentId]?.reason || scanReason,
+        },
+      };
+
+      // Immediately save & sync to Central Database (Firestore + LocalStorage) for targetClassId
+      const targetClassStudents = students.filter((s) => s.classId === targetClassId);
+      const existingSession = storage.getAttendanceSession(targetClassId, selectedDate, selectedPeriod);
+      const existingRecords = storage.getAttendanceRecords({
+        classId: targetClassId,
+        date: selectedDate,
+        sessionId: existingSession?.id,
+      });
+
+      const recordsToSave = targetClassStudents.map((stu) => {
+        if (stu.id === studentId) {
+          return {
+            studentId: stu.id,
+            studentName: stu.khmerName,
+            status,
+            reason: updated[stu.id]?.reason || scanReason,
+          };
+        }
+        const inMemory = targetClassId === selectedClassId ? updated[stu.id] : undefined;
+        if (inMemory) {
+          return {
+            studentId: stu.id,
+            studentName: stu.khmerName,
+            status: inMemory.status,
+            reason: inMemory.reason,
+          };
+        }
+        const existingMatch = existingRecords.find(
+          (r) => r.studentId === stu.id || r.studentId === stu.studentId
+        );
+        return {
+          studentId: stu.id,
+          studentName: stu.khmerName,
+          status: existingMatch ? existingMatch.status : ('present' as AttendanceStatus),
+          reason: existingMatch?.reason || '',
+        };
+      });
+
+      if (recordsToSave.length > 0) {
+        storage.saveAttendanceSession(
+          targetClassId,
+          selectedDate,
+          selectedPeriod,
+          selectedSubjectId,
+          recordsToSave,
+          currentUser.id,
+          currentUser.name
+        );
+      }
+
+      return updated;
+    });
+    setIsExistingSession(true);
+    setIsSavedRecently(true);
   };
 
   // Period options for Cambodian secondary school

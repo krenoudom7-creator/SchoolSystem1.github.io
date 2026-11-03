@@ -127,6 +127,8 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
         try {
           const qrPayload = JSON.stringify({
             school: 'Toulsambour',
+            id: item.id,
+            studentId: item.code,
             code: item.code,
             name: item.khmerName,
             type: item.type,

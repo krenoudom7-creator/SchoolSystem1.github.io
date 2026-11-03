@@ -118,36 +118,77 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     }
   }, [soundEnabled]);
 
+  const [scanTargetStatus, setScanTargetStatus] = useState<AttendanceStatus>('present');
+
+  const statusLabels: Record<AttendanceStatus, { label: string; color: string; activeBg: string }> = {
+    present: { label: 'មានវត្តមាន', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', activeBg: 'bg-emerald-600 text-white ring-2 ring-emerald-300' },
+    late: { label: 'មកយឺត', color: 'text-orange-700 bg-orange-50 border-orange-200', activeBg: 'bg-orange-500 text-white ring-2 ring-orange-300' },
+    absent_permission: { label: 'មានច្បាប់', color: 'text-amber-700 bg-amber-50 border-amber-200', activeBg: 'bg-amber-500 text-white ring-2 ring-amber-300' },
+    absent_no_permission: { label: 'ឥតច្បាប់', color: 'text-rose-700 bg-rose-50 border-rose-200', activeBg: 'bg-rose-600 text-white ring-2 ring-rose-300' },
+    early_leave: { label: 'ចេញមុន', color: 'text-purple-700 bg-purple-50 border-purple-200', activeBg: 'bg-purple-600 text-white ring-2 ring-purple-300' },
+  };
+
   // Process raw scanned code from QR or Barcode
   const handleProcessCode = useCallback((rawInput: string) => {
     if (!rawInput || !rawInput.trim()) return;
     const clean = rawInput.trim();
 
-    // Check if code is JSON payload like {"id":"STU-0701",...}
-    let targetCode = clean;
+    // Extract candidate identifiers from JSON payload (e.g. {"school":"Toulsambour","code":"STU-0702","name":"សាន សៃ","type":"student"})
+    const candidates: string[] = [];
+    let displayCode = clean;
+
     if (clean.startsWith('{') && clean.endsWith('}')) {
       try {
         const parsed = JSON.parse(clean);
-        targetCode = parsed.id || parsed.studentId || clean;
+        if (parsed.code) candidates.push(String(parsed.code).trim());
+        if (parsed.studentId) candidates.push(String(parsed.studentId).trim());
+        if (parsed.id) candidates.push(String(parsed.id).trim());
+        if (parsed.teacherId) candidates.push(String(parsed.teacherId).trim());
+        if (parsed.name) candidates.push(String(parsed.name).trim());
+        if (parsed.khmerName) candidates.push(String(parsed.khmerName).trim());
+        if (parsed.latinName) candidates.push(String(parsed.latinName).trim());
+        displayCode = parsed.code || parsed.studentId || parsed.id || parsed.name || clean;
       } catch {
-        // use raw string
+        // Fallback if malformed JSON: extract via regex
       }
     }
 
-    // Match student by studentId, id, or khmerName
-    const matched = students.find(
-      (s) =>
-        s.studentId.toLowerCase() === targetCode.toLowerCase() ||
-        s.id.toLowerCase() === targetCode.toLowerCase() ||
-        s.khmerName.toLowerCase() === targetCode.toLowerCase()
-    );
+    // Regex fallback for STU-XXXX or TCH-XXXX inside any string or URL
+    const idRegexMatch = clean.match(/(STU-\d+|TCH-\d+|stu-\d+)/i);
+    if (idRegexMatch && idRegexMatch[1]) {
+      candidates.push(idRegexMatch[1].trim());
+    }
+
+    candidates.push(clean);
+
+    const normalize = (str: string) => str.trim().replace(/\s+/g, ' ').toLowerCase();
+    const normalizedCandidates = candidates.map(normalize).filter(Boolean);
+
+    // Match student by studentId, id, khmerName, or latinName
+    const matched = students.find((s) => {
+      const sCode = normalize(s.studentId || '');
+      const sId = normalize(s.id || '');
+      const sKhmer = normalize(s.khmerName || '');
+      const sLatin = normalize(s.latinName || '');
+      // Also allow matching numeric suffix e.g. "0702" or "702"
+      const sDigits = sCode.replace(/\D/g, '');
+
+      return normalizedCandidates.some(
+        (cand) =>
+          cand === sCode ||
+          cand === sId ||
+          cand === sKhmer ||
+          (sLatin && cand === sLatin) ||
+          (sDigits.length >= 3 && cand.replace(/\D/g, '') === sDigits && cand.replace(/\D/g, '').length >= 3)
+      );
+    });
 
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
     if (!matched) {
       playBeep('error');
-      setErrorMessage(`មិនស្គាល់សិស្សដែលមានកូដ "${clean}" ទេ!`);
+      setErrorMessage(`មិនស្គាល់សិស្សដែលមានកូដ "${displayCode}" ទេ! សូមពិនិត្យមើលបញ្ជីឈ្មោះសិស្ស។`);
       setTimeout(() => setErrorMessage(''), 4000);
       return;
     }
@@ -155,8 +196,8 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     // Check if already scanned in current session
     const isDuplicate = scannedHistory.some((h) => h.student.id === matched.id);
 
-    // Call mark attendance
-    onMarkAttendance(matched.id, 'present');
+    // Call mark attendance with the chosen scan status
+    onMarkAttendance(matched.id, scanTargetStatus);
 
     const record: ScannedRecord = {
       student: matched,
@@ -173,7 +214,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     } else {
       playBeep('success');
     }
-  }, [students, scannedHistory, onMarkAttendance, playBeep]);
+  }, [students, scannedHistory, onMarkAttendance, playBeep, scanTargetStatus]);
 
   // Start Camera Stream
   useEffect(() => {
@@ -257,7 +298,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
 
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: 'dontInvert',
+        inversionAttempts: 'attemptBoth',
       });
 
       if (code && code.data && code.data.trim()) {
@@ -300,8 +341,8 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[94vh]">
+    <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto overscroll-contain touch-pan-y">
+      <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[94dvh]">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-4 sm:p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -340,9 +381,31 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
         </div>
 
         {/* Modal Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain touch-pan-y flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column: Live Camera & Scanner Viewport */}
           <div className="lg:col-span-7 flex flex-col space-y-4">
+            {/* Scan Status Mode Selector */}
+            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[11px] font-bold text-slate-700">កំណត់ស្ថានភាពពេលស្កេន៖</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(Object.keys(statusLabels) as AttendanceStatus[]).map((stKey) => {
+                  const stInfo = statusLabels[stKey];
+                  const isSelected = scanTargetStatus === stKey;
+                  return (
+                    <button
+                      key={stKey}
+                      type="button"
+                      onClick={() => setScanTargetStatus(stKey)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
+                        isSelected ? stInfo.activeBg : stInfo.color
+                      }`}
+                    >
+                      {stInfo.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             {/* Viewport Frame */}
             <div className="relative aspect-video sm:aspect-4/3 bg-slate-950 rounded-2xl overflow-hidden border-2 border-slate-800 shadow-inner flex items-center justify-center">
               {/* Video Element */}
