@@ -223,7 +223,7 @@ export default function App() {
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0 p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-28 md:pb-10 overflow-x-hidden">
+        <main className="flex-1 min-w-0 p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-28 md:pb-10 overflow-x-hidden print:p-0 print:m-0 print:max-w-none print:overflow-visible">
           {currentTab === 'dashboard' && (
             <DashboardView
               students={dbState.students}

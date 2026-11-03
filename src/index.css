@@ -362,10 +362,14 @@ p.font-moul {
     print-color-adjust: exact !important;
   }
 
-  /* Avoid awkward page breaks inside tables and signatures */
-  table, tr, td, th {
+  /* Avoid awkward page breaks inside table rows and signatures */
+  tr, td, th {
     page-break-inside: avoid;
     break-inside: avoid;
+  }
+
+  .overflow-x-auto {
+    overflow: visible !important;
   }
 
   .signature-block {

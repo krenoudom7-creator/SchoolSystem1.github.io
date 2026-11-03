@@ -197,7 +197,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
       )}
 
       {/* Header & Controls */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs no-print print:hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -298,7 +298,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
 
       {/* Individual Teacher Profile Banner (when in Teacher Mode) */}
       {filterMode === 'teacher' && activeTeacher && (
-        <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white rounded-2xl p-5 shadow-sm border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white rounded-2xl p-5 shadow-sm border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 no-print print:hidden">
           <div className="flex items-center gap-4">
             <img
               src={safeAvatar(activeTeacher.photo, DEFAULT_TEACHER_AVATAR)}
@@ -346,7 +346,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
 
       {/* Class Banner (when in Class Mode) */}
       {filterMode === 'class' && activeClass && (
-        <div className="bg-gradient-to-r from-slate-900 to-blue-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-slate-900 to-blue-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800 flex items-center justify-between no-print print:hidden">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold">
               <School className="w-5 h-5" />
@@ -368,59 +368,75 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
       )}
 
       {/* Timetable Interactive Weekly Matrix */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-6 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-6 overflow-hidden print:border-none print:shadow-none print:p-0 print:rounded-none print:overflow-visible">
         {/* Printable Official Header (Shown during print) */}
-        <div className="hidden print:block text-center pb-6 border-b border-slate-300 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="text-left">
-              <div className="font-moul text-xs text-slate-900 font-bold">
+        <div className="hidden print:block pb-3 border-b-2 border-slate-900 mb-3">
+          <div className="grid grid-cols-3 items-center gap-2">
+            <div className="text-left space-y-0.5">
+              <div className="font-moul text-[11px] text-slate-900 font-bold leading-[1.8]">
                 ក្រសួងអប់រំ យុវជន និងកីឡា
               </div>
-              <div className="font-moul text-xs text-blue-950 font-bold mt-1">
+              <div className="text-[11px] text-slate-800">
+                មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ចាម
+              </div>
+              <div className="text-[11px] text-slate-800">
+                ការិយាល័យអប់រំ ស្រុកស្ទឹងត្រង់
+              </div>
+              <div className="font-moul text-[11px] text-blue-950 font-bold leading-[1.8]">
                 អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ
               </div>
-              <div className="text-[11px] text-slate-600">ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម</div>
             </div>
 
-            <div className="w-16 h-16">
-              <img src={SCHOOL_LOGO_URL} alt="Logo" className="w-full h-full object-cover rounded-full" />
+            <div className="flex items-center justify-center">
+              <div className="w-16 h-16 aspect-square shrink-0 rounded-full p-0.5 bg-white border-2 border-amber-500 overflow-hidden flex items-center justify-center">
+                <img
+                  src={SCHOOL_LOGO_URL}
+                  alt="Logo អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ"
+                  className="w-full h-full object-contain rounded-full"
+                />
+              </div>
             </div>
 
-            <div className="text-right">
-              <div className="font-moul text-xs text-slate-900 font-bold">
+            <div className="text-center space-y-0.5 flex flex-col items-center justify-center">
+              <div className="font-moul text-[11px] text-slate-900 font-bold leading-[1.8]">
                 ព្រះរាជាណាចក្រកម្ពុជា
               </div>
-              <div className="font-moul text-xs text-slate-900 font-bold mt-1">
+              <div className="font-moul text-[11px] text-slate-900 font-bold leading-[1.8]">
                 ជាតិ សាសនា ព្រះមហាក្សត្រ
               </div>
-              <div className="text-xs text-amber-600 font-serif">❖ ❖ ❖</div>
+              <div className="text-xs text-amber-600 font-serif tracking-widest">❖ ❖ ❖</div>
             </div>
           </div>
 
-          <h2 className="font-moul text-base font-bold text-slate-900 mt-4">
-            {filterMode === 'teacher'
-              ? `កាលវិភាគបង្រៀនប្រចាំសប្ដាហ៍របស់៖ ${activeTeacher?.name || ''}`
-              : `កាលវិភាគសិក្សាប្រចាំសប្ដាហ៍របស់៖ ${activeClass?.name || ''}`}
-          </h2>
-          <p className="text-xs text-slate-600 mt-1">
-            ឆ្នាំសិក្សា ២០២៥-២០២៦ · បន្ទុកម៉ោងបង្រៀនសរុប {toKhmerNum(weeklyHours)} ម៉ោង/សប្ដាហ៍
-          </p>
+          <div className="text-center mt-2">
+            <h2 className="font-moul text-sm font-bold text-slate-900 leading-[1.9]">
+              {filterMode === 'teacher'
+                ? `កាលវិភាគបង្រៀនប្រចាំសប្ដាហ៍របស់៖ ${activeTeacher?.name || ''}`
+                : `កាលវិភាគសិក្សាប្រចាំសប្ដាហ៍របស់៖ ${activeClass?.name || ''}`}
+            </h2>
+            <p className="text-[11px] text-slate-700 mt-0.5 font-medium">
+              ឆ្នាំសិក្សា ២០២៥-២០២៦ · បន្ទុកម៉ោងបង្រៀនសរុប {toKhmerNum(weeklyHours)} ម៉ោង/សប្ដាហ៍
+            </p>
+          </div>
         </div>
 
         {/* Timetable Grid Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-slate-200 text-center">
+        <div className="overflow-x-auto print:overflow-visible">
+          <table className="w-full border-collapse border border-slate-200 print:border-slate-800 text-center print:table-fixed">
             <thead>
               <tr className="bg-slate-100 text-xs font-bold text-slate-800">
-                <th className="border border-slate-200 p-3 w-32 bg-slate-200/70">
-                  <div className="flex items-center justify-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-blue-900" />
-                    <span>ម៉ោងសិក្សា</span>
+                <th className="border border-slate-200 print:border-slate-800 p-3 print:p-1.5 w-32 print:w-[13%] bg-slate-200/70 print:bg-slate-100">
+                  <div className="flex items-center justify-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-blue-900 print:hidden" />
+                    <span className="print:text-[10px]">ម៉ោងសិក្សា</span>
                   </div>
                 </th>
                 {days.map((day) => (
-                  <th key={day} className="border border-slate-200 p-3 min-w-[140px]">
-                    <div className="text-blue-950 font-bold">{day}</div>
+                  <th
+                    key={day}
+                    className="border border-slate-200 print:border-slate-800 p-3 print:p-1.5 min-w-[140px] print:min-w-0 print:w-[14.5%] print:bg-slate-100"
+                  >
+                    <div className="text-blue-950 font-bold print:text-[11px]">{day}</div>
                   </th>
                 ))}
               </tr>
@@ -429,11 +445,11 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
               {periods.map((p) => (
                 <tr key={p.num} className="hover:bg-slate-50/50">
                   {/* Period Time Header */}
-                  <td className="border border-slate-200 p-2.5 bg-slate-50/80">
-                    <div className="font-bold text-xs text-slate-900">
+                  <td className="border border-slate-200 print:border-slate-800 p-2.5 print:p-1.5 bg-slate-50/80 print:bg-slate-50">
+                    <div className="font-bold text-xs print:text-[10px] text-slate-900">
                       ម៉ោងទី {toKhmerNum(p.num)}
                     </div>
-                    <div className="text-[10px] text-slate-500 font-sans mt-0.5">
+                    <div className="text-[10px] print:text-[9px] text-slate-500 print:text-slate-700 font-sans mt-0.5">
                       {p.time}
                     </div>
                   </td>
@@ -445,42 +461,41 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
                     );
 
                     const targetClass = slot ? classes.find((c) => c.id === slot.classId) : null;
-                    const targetTeacher = slot ? teachers.find((t) => t.id === slot.teacherId) : null;
 
                     return (
                       <td
                         key={day}
-                        className="border border-slate-200 p-2 h-24 align-top relative group transition-colors hover:bg-blue-50/30"
+                        className="border border-slate-200 print:border-slate-800 p-2 print:p-1 h-24 print:h-auto align-top relative group transition-colors hover:bg-blue-50/30"
                       >
                         {slot ? (
-                          <div className="bg-gradient-to-br from-blue-50 to-indigo-50/70 border border-blue-200 rounded-xl p-2.5 text-left h-full flex flex-col justify-between shadow-2xs group/card relative">
+                          <div className="bg-gradient-to-br from-blue-50 to-indigo-50/70 print:bg-none print:bg-white border border-blue-200 print:border-slate-300 rounded-xl print:rounded-md p-2.5 print:p-1 text-left h-full flex flex-col justify-between shadow-2xs print:shadow-none group/card relative">
                             <div>
-                              <div className="font-bold text-xs text-blue-950 leading-tight">
+                              <div className="font-bold text-xs print:text-[10px] text-blue-950 leading-tight">
                                 {slot.subjectName}
                               </div>
 
                               {/* In teacher mode: show class name; in class mode: show teacher name */}
                               {filterMode === 'teacher' ? (
-                                <div className="text-[10px] text-slate-600 font-medium flex items-center gap-1 mt-1">
-                                  <School className="w-3 h-3 text-slate-500 flex-shrink-0" />
+                                <div className="text-[10px] print:text-[9px] text-slate-600 print:text-slate-800 font-medium flex items-center gap-1 mt-1 print:mt-0.5">
+                                  <School className="w-3 h-3 text-slate-500 flex-shrink-0 print:hidden" />
                                   <span className="truncate font-semibold">{targetClass?.name || 'ថ្នាក់រៀន'}</span>
                                 </div>
                               ) : (
-                                <div className="text-[10px] text-slate-600 font-medium flex items-center gap-1 mt-1">
-                                  <GraduationCap className="w-3 h-3 text-slate-500 flex-shrink-0" />
+                                <div className="text-[10px] print:text-[9px] text-slate-600 print:text-slate-800 font-medium flex items-center gap-1 mt-1 print:mt-0.5">
+                                  <GraduationCap className="w-3 h-3 text-slate-500 flex-shrink-0 print:hidden" />
                                   <span className="truncate font-semibold">{slot.teacherName}</span>
                                 </div>
                               )}
                             </div>
 
-                            <div className="flex items-center justify-between text-[9px] text-slate-500 pt-1 border-t border-blue-100/80 mt-1">
+                            <div className="flex items-center justify-between text-[9px] print:text-[8.5px] text-slate-500 print:text-slate-700 pt-1 print:pt-0.5 border-t border-blue-100/80 print:border-slate-200 mt-1 print:mt-0.5">
                               <span className="flex items-center gap-0.5 font-sans">
-                                <MapPin className="w-2.5 h-2.5 text-blue-700" />
+                                <MapPin className="w-2.5 h-2.5 text-blue-700 print:hidden" />
                                 {slot.room}
                               </span>
 
                               {/* Hover Edit & Delete Actions (hidden on print) */}
-                              <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity no-print">
+                              <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity no-print print:hidden">
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditSlot(slot)}
@@ -505,7 +520,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
                             <button
                               type="button"
                               onClick={() => handleOpenAddSlot(day, p.num)}
-                              className="w-full h-full min-h-[60px] rounded-xl border border-dashed border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 text-slate-300 hover:text-emerald-700 text-[11px] font-semibold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer no-print group/empty"
+                              className="w-full h-full min-h-[60px] rounded-xl border border-dashed border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 text-slate-300 hover:text-emerald-700 text-[11px] font-semibold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer no-print print:hidden group/empty"
                             >
                               <Plus className="w-3.5 h-3.5 group-hover/empty:scale-125 transition-transform" />
                               <span className="text-[9px]">បន្ថែម</span>
@@ -523,26 +538,28 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
         </div>
 
         {/* Official Signatures for Printing */}
-        <div className="hidden print:flex justify-between items-start pt-12 mt-8 text-xs text-slate-800">
-          <div className="text-center w-60">
-            <div className="font-semibold text-slate-700">បានឃើញ និងអនុម័ត</div>
-            <div className="font-moul text-xs font-bold text-slate-900 mt-1">
-              នាយកសាលា
+        <div className="hidden print:grid grid-cols-2 text-center pt-5 mt-4 text-xs text-slate-900 signature-block">
+          <div className="space-y-1">
+            <div className="font-semibold text-slate-800">បានឃើញ និងអនុម័ត</div>
+            <div className="font-moul text-xs font-bold text-blue-950 mt-1 leading-[1.8]">
+              នាយកសាលា អនុវិទ្យាល័យទួលសំបួរ
             </div>
-            <div className="h-20" />
-            <div className="font-bold">លោក ស៊ុយ បូរ៉ា</div>
+            <div className="h-14" />
+            <div className="font-moul text-xs font-bold text-slate-900 leading-[1.8]">
+              លាង បេន
+            </div>
           </div>
 
-          <div className="text-center w-60">
-            <div>
-              ថ្ងៃ................... ខែ............. ឆ្នាំ ២០២៦
+          <div className="space-y-1">
+            <div className="text-slate-700">
+              ទួលសំបួរ, ថ្ងៃ................... ខែ............. ឆ្នាំ ២០២៦
             </div>
-            <div className="font-moul text-xs font-bold text-slate-900 mt-1">
+            <div className="font-moul text-xs font-bold text-slate-900 mt-1 leading-[1.8]">
               {filterMode === 'teacher' ? 'ហត្ថលេខាគ្រូបង្រៀន' : 'ហត្ថលេខាគ្រូប្រចាំថ្នាក់'}
             </div>
-            <div className="h-20" />
-            <div className="font-bold">
-              {filterMode === 'teacher' ? activeTeacher?.name : 'គ្រូប្រចាំថ្នាក់'}
+            <div className="h-14" />
+            <div className="font-bold text-slate-900">
+              {filterMode === 'teacher' ? activeTeacher?.name : ''}
             </div>
           </div>
         </div>
