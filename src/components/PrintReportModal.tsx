@@ -1,6 +1,7 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Printer, X, Download, School, CheckCircle2 } from 'lucide-react';
-import { formatKhmerDate, getAttendanceStatusBadge } from '../utils/calculations.ts';
+import { formatKhmerDate, getAttendanceStatusBadge, getTodayLocalStr } from '../utils/calculations.ts';
 import { SCHOOL_LOGO_URL } from '../utils/schoolLogo.ts';
 
 interface PrintReportModalProps {
@@ -38,14 +39,17 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
 
   if (!isOpen || !data) return null;
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayLocalStr();
   const khmerDateStr = formatKhmerDate(todayStr);
 
   const handlePrint = () => {
-    window.print();
+    document.body.classList.add('modal-print-active');
+    setTimeout(() => {
+      window.print();
+    }, 50);
   };
 
-  return (
+  return createPortal(
     <div
       id="official-print-modal-overlay"
       className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 overflow-y-auto print:p-0 print:bg-white print:static"
@@ -301,6 +305,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

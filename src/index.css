@@ -129,12 +129,8 @@ body {
     display: none !important;
   }
 
-  /* 2. When the official print modal is active, hide the entire underlying app website */
-  body.modal-print-active .app-shell,
-  body.modal-print-active header,
-  body.modal-print-active nav,
-  body.modal-print-active aside,
-  body.modal-print-active main,
+  /* 2. When the official print modal is active (mounted via createPortal on document.body), hide #root */
+  body.modal-print-active #root,
   body.modal-print-active .no-print {
     display: none !important;
   }
@@ -158,12 +154,14 @@ body {
   #official-print-modal-overlay {
     position: static !important;
     inset: auto !important;
-    background: transparent !important;
-    background-color: transparent !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
     overflow: visible !important;
     display: block !important;
     box-shadow: none !important;
@@ -177,6 +175,9 @@ body {
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
     box-shadow: none !important;
     border: none !important;
     display: block !important;

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Printer,
   FileCheck,
@@ -44,6 +45,23 @@ export const StudyCertificateModal: React.FC<StudyCertificateModalProps> = ({
   const [academicStanding, setAcademicStanding] = useState<string>('ជាប់កម្រិតមធ្យមសិក្សាបឋមភូមិ');
   const [refNumber, setRefNumber] = useState<string>(() => `${Math.floor(100 + Math.random() * 900)}/២៦`);
 
+  useEffect(() => {
+    if (preSelectedStudent?.id) {
+      setSelectedStudentId(preSelectedStudent.id);
+    }
+  }, [preSelectedStudent]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-print-active');
+    } else {
+      document.body.classList.remove('modal-print-active');
+    }
+    return () => {
+      document.body.classList.remove('modal-print-active');
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const activeStudent = students.find((s) => s.id === selectedStudentId) || students[0];
@@ -59,12 +77,21 @@ export const StudyCertificateModal: React.FC<StudyCertificateModalProps> = ({
   const yearKh = toKhmerNum(today.getFullYear());
 
   const handlePrint = () => {
-    window.print();
+    document.body.classList.add('modal-print-active');
+    setTimeout(() => {
+      window.print();
+    }, 50);
   };
 
-  return (
-    <div className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-2 sm:p-4 backdrop-blur-xs animate-in fade-in font-khmer">
-      <div className="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl border border-slate-100 max-h-[95vh] flex flex-col">
+  return createPortal(
+    <div
+      id="official-print-modal-overlay"
+      className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-2 sm:p-4 backdrop-blur-xs animate-in fade-in font-khmer print:static print:bg-white print:p-0"
+    >
+      <div
+        id="official-print-modal-card"
+        className="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl border border-slate-100 max-h-[95vh] flex flex-col print:max-h-none print:shadow-none print:border-none print:p-0 print:max-w-none"
+      >
         {/* Modal Controls Header */}
         <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 flex-shrink-0 no-print">
           <div className="flex items-center gap-3">
@@ -166,7 +193,10 @@ export const StudyCertificateModal: React.FC<StudyCertificateModalProps> = ({
         </div>
 
         {/* Printable A4 Certificate Preview */}
-        <div className="flex-1 overflow-y-auto py-4 bg-slate-100 rounded-2xl flex justify-center print:bg-white print:p-0">
+        <div
+          id="official-print-sheet"
+          className="flex-1 overflow-y-auto py-4 bg-slate-100 rounded-2xl flex justify-center print:bg-white print:p-0 print:overflow-visible"
+        >
           <div
             className="w-[210mm] min-h-[297mm] bg-white p-12 sm:p-14 shadow-lg border border-slate-300 print:border-none print:shadow-none print:p-8 flex flex-col justify-between text-slate-900 relative"
             style={{ boxSizing: 'border-box' }}
@@ -357,6 +387,7 @@ export const StudyCertificateModal: React.FC<StudyCertificateModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

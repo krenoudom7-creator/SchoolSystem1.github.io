@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import {
   Printer,
@@ -174,7 +175,7 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       id="official-print-modal-overlay"
       className="fixed inset-0 bg-slate-900/75 z-50 flex items-center justify-center p-2 sm:p-4 backdrop-blur-xs animate-in fade-in print:static print:bg-white print:p-0"
@@ -524,6 +525,7 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
