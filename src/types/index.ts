@@ -207,6 +207,11 @@ export interface BannerSlide {
   title: string;
   subtitle: string;
   imageUrl?: string;
+  videoUrl?: string;
+  mediaType?: 'image' | 'video';
+  videoLayout?: 'background' | 'split'; // 'background' = full background video, 'split' = featured video player on right
+  videoOpacity?: number; // 15 to 100
+  isVideoMuted?: boolean;
   gradient: string; // e.g., 'from-blue-950 via-indigo-900 to-blue-900'
   primaryButtonText?: string;
   primaryButtonAction?: string; // Tab to navigate to
