@@ -10,6 +10,8 @@ import {
   Search,
   UserCheck,
   FlipHorizontal,
+  RectangleVertical,
+  RectangleHorizontal,
 } from 'lucide-react';
 import { Student, Teacher, SchoolClass } from '../types/index.ts';
 import { SCHOOL_LOGO_URL } from '../utils/schoolLogo.ts';
@@ -46,6 +48,7 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
   classes,
 }) => {
   const [targetType, setTargetType] = useState<'student' | 'teacher'>('student');
+  const [cardOrientation, setCardOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -195,12 +198,41 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
                 បោះពុម្ពកាតសិស្ស & កាតបុគ្គលិក (ID Cards)
               </h2>
               <p className="text-xs text-slate-500">
-                រចនាសម្ព័ន្ធកាតស្ដង់ដារ មានឡូហ្គោ ត្រា និង QR Code សម្រាប់ពាក់ និងស្កេនវត្តមាន (បោះពុម្ពលើក្រដាស A4)
+                អាចជ្រើសរើសទម្រង់ <strong className="text-blue-900">កាតបញ្ឈរ (Portrait)</strong> ឬ{' '}
+                <strong className="text-blue-900">កាតផ្ដេក (Landscape)</strong> មានឡូហ្គោ ត្រា និង QR Code សម្រាប់បោះពុម្ពលើក្រដាស A4
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Orientation Switcher: Portrait vs Landscape */}
+            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setCardOrientation('portrait')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  cardOrientation === 'portrait'
+                    ? 'bg-blue-900 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <RectangleVertical className="w-3.5 h-3.5 text-amber-400" />
+                <span>កាតបញ្ឈរ</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCardOrientation('landscape')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  cardOrientation === 'landscape'
+                    ? 'bg-blue-900 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <RectangleHorizontal className="w-3.5 h-3.5 text-amber-400" />
+                <span>កាតផ្ដេក</span>
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={() => setShowBackSide(!showBackSide)}
@@ -310,7 +342,8 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
             </div>
 
             <div className="text-[11px] text-slate-600 font-semibold bg-blue-50 px-3 py-1 rounded-lg border border-blue-100">
-              បានជ្រើសរើសបោះពុម្ព៖ <strong className="text-blue-900">{selectedIds.length}</strong> / {availableItems.length} នាក់
+              ទម្រង់៖ <strong className="text-amber-700">{cardOrientation === 'portrait' ? 'កាតបញ្ឈរ' : 'កាតផ្ដេក'}</strong> · បានជ្រើសរើស៖{' '}
+              <strong className="text-blue-900">{selectedIds.length}</strong> / {availableItems.length} នាក់
             </div>
           </div>
 
@@ -351,11 +384,188 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
             <div className="p-12 text-center text-slate-400 text-xs no-print">
               សូមជ្រើសរើសសិស្ស ឬគ្រូយ៉ាងហោចណាស់ម្នាក់ដើម្បីបង្កើត និងបោះពុម្ពកាត
             </div>
+          ) : cardOrientation === 'portrait' ? (
+            /* ==========================================================================
+               PORTRAIT / VERTICAL ID CARD LAYOUT (កាតបញ្ឈរ 220px × 348px)
+               ========================================================================== */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 justify-items-center print-card-grid-portrait">
+              {cardItems.map((item) => (
+                <React.Fragment key={item.id}>
+                  {/* FRONT OF PORTRAIT ID CARD */}
+                  <div
+                    className="w-[220px] h-[348px] bg-white rounded-2xl shadow-md border-2 border-slate-300 relative overflow-hidden flex flex-col justify-between print-card-item select-none"
+                    style={{
+                      background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+                    }}
+                  >
+                    {/* Top Royal Blue Header with Lanyard Slot & Circular Seal Logo */}
+                    <div className="bg-gradient-to-b from-blue-950 via-blue-900 to-indigo-950 text-white pt-1.5 pb-2.5 px-2.5 text-center border-b-2 border-amber-400 relative">
+                      {/* Lanyard Slot Hole Indicator */}
+                      <div className="w-8 h-1.5 rounded-full bg-slate-950/60 border border-amber-300/40 mx-auto mb-1.5" />
+
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-9 h-9 rounded-full bg-white p-0.5 overflow-hidden border-2 border-amber-400 shadow-xs flex items-center justify-center flex-shrink-0">
+                          <img
+                            src={SCHOOL_LOGO_URL}
+                            alt="Logo"
+                            className="w-full h-full object-cover scale-[1.38] rounded-full"
+                          />
+                        </div>
+                        <div className="text-left min-w-0">
+                          <div className="font-moul text-[9.5px] text-amber-300 font-bold leading-snug truncate">
+                            អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ
+                          </div>
+                          <div className="text-[7.5px] text-slate-200 tracking-wider font-english uppercase font-bold">
+                            {item.type === 'student' ? 'STUDENT IDENTITY CARD' : 'STAFF IDENTITY CARD'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Portrait Body: Photo + Student Info + QR/Stamp */}
+                    <div className="px-3 py-1.5 flex-1 flex flex-col items-center justify-between">
+                      {/* Centered Portrait Photo Frame & ID Pill */}
+                      <div className="flex flex-col items-center">
+                        <div className="w-[74px] h-[90px] rounded-xl overflow-hidden border-2 border-amber-400 shadow-xs bg-slate-100">
+                          <img
+                            src={item.photo}
+                            alt={item.khmerName}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <span className="-mt-2 z-10 font-english text-[9px] font-bold text-white bg-blue-950 px-2 py-0.5 rounded-full border border-amber-400 shadow-2xs">
+                          ID: {item.code}
+                        </span>
+                      </div>
+
+                      {/* Name & Role/Class */}
+                      <div className="text-center w-full space-y-0.5 my-0.5">
+                        <div className="font-bold font-moul text-blue-950 text-[11px] truncate leading-relaxed">
+                          {item.khmerName}
+                        </div>
+                        <div className="text-[9.5px] font-english text-slate-700 font-bold uppercase truncate">
+                          {item.latinName}
+                        </div>
+                        <div className="pt-0.5">
+                          <span className="inline-block font-bold text-amber-950 bg-amber-100/90 px-2.5 py-0.5 rounded-full text-[9.5px] border border-amber-300 max-w-full truncate">
+                            {item.roleOrClass}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Gender & DOB Compact Box */}
+                      <div className="w-full grid grid-cols-2 gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[9px] text-center">
+                        <div>
+                          <span className="text-slate-400 text-[8px]">ភេទ: </span>
+                          <span className="font-bold text-slate-800">{item.gender}</span>
+                        </div>
+                        <div className="border-l border-slate-200 pl-1">
+                          <span className="text-slate-400 text-[8px]">កំណើត: </span>
+                          <span className="font-english font-bold text-slate-800 text-[8.5px]">{item.dob}</span>
+                        </div>
+                      </div>
+
+                      {/* Bottom Row: QR Code + Principal Stamp */}
+                      <div className="w-full flex items-center justify-between pt-1 px-1">
+                        {item.qrDataUrl ? (
+                          <img
+                            src={item.qrDataUrl}
+                            alt="QR Code"
+                            className="w-13 h-13 rounded-md border border-slate-200 p-0.5 bg-white shadow-2xs"
+                          />
+                        ) : (
+                          <div className="w-13 h-13 bg-slate-100 rounded-md animate-pulse" />
+                        )}
+
+                        <div className="text-center flex-1 pl-2">
+                          <div className="text-[7px] text-slate-500">ទួលសំបួរ, ២០២៥-២០២៦</div>
+                          <div className="h-5 border-b border-rose-400 flex items-center justify-center mx-auto w-20">
+                            <span className="text-[7px] text-rose-700 font-bold tracking-tighter">
+                              [ត្រា និងហត្ថលេខា]
+                            </span>
+                          </div>
+                          <div className="text-[7.5px] text-blue-950 font-bold mt-0.5">នាយកសាលា</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Portrait Bottom Strip */}
+                    <div className="bg-blue-950 text-white px-2.5 py-1 flex items-center justify-between text-[7.5px] font-semibold border-t border-amber-400">
+                      <span className="truncate">ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម</span>
+                      <span className="font-english text-amber-300 font-bold flex-shrink-0">2025-2026</span>
+                    </div>
+                  </div>
+
+                  {/* OPTIONAL BACK SIDE OF PORTRAIT ID CARD */}
+                  {showBackSide && (
+                    <div
+                      className="w-[220px] h-[348px] bg-white rounded-2xl shadow-md border-2 border-slate-300 relative overflow-hidden flex flex-col justify-between print-card-item select-none"
+                      style={{
+                        background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
+                      }}
+                    >
+                      <div className="bg-blue-950 text-amber-300 pt-1.5 pb-2 px-2.5 text-center border-b-2 border-amber-400">
+                        <div className="w-8 h-1.5 rounded-full bg-slate-950/60 border border-amber-300/40 mx-auto mb-1.5" />
+                        <div className="font-moul text-[9px]">បទបញ្ជាផ្ទៃក្នុង និងទំនាក់ទំនង</div>
+                      </div>
+
+                      <div className="px-3 py-2.5 flex-1 flex flex-col justify-between text-[8.5px] text-slate-700">
+                        <div className="flex flex-col items-center text-center mb-1">
+                          <div className="w-8 h-8 rounded-full bg-white p-0.5 overflow-hidden border border-amber-400 shadow-2xs mb-1">
+                            <img
+                              src={SCHOOL_LOGO_URL}
+                              alt="Logo"
+                              className="w-full h-full object-cover scale-[1.38] rounded-full"
+                            />
+                          </div>
+                          <div className="font-bold text-blue-950 text-[9px]">
+                            អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ
+                          </div>
+                        </div>
+
+                        <ul className="list-disc pl-3.5 space-y-1 leading-snug">
+                          <li>ត្រូវពាក់បណ្ណសម្គាល់ខ្លួននេះជារៀងរាល់ថ្ងៃពេលមកសាលារៀន។</li>
+                          <li>បណ្ណនេះប្រើសម្រាប់ស្កេន QR Code កត់ត្រាវត្តមានប្រចាំថ្ងៃ។</li>
+                          <li>ហាមប្រគល់បណ្ណនេះឱ្យអ្នកដទៃប្រើប្រាស់ជំនួសជាដាច់ខាត។</li>
+                        </ul>
+
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 space-y-1 text-[8.5px]">
+                          <div>
+                            <div className="text-slate-400 text-[7.5px]">ទូរស័ព្ទអាណាព្យាបាល/ទំនាក់ទំនង៖</div>
+                            <strong className="font-english text-blue-950 text-[9.5px]">
+                              {item.parentPhone || '012 345 678'}
+                            </strong>
+                          </div>
+                          <div>
+                            <div className="text-slate-400 text-[7.5px]">អាសយដ្ឋាន៖</div>
+                            <strong className="text-slate-800 line-clamp-2 leading-tight">
+                              {item.address || 'ឃុំទួលសំបួរ ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម'}
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div className="text-center text-[7.5px] text-slate-500 italic leading-tight">
+                          ប្រសិនបើរើសបានបណ្ណនេះ សូមមេត្តាយកមកប្រគល់ជូនការិយាល័យសាលា។
+                        </div>
+                      </div>
+
+                      <div className="bg-blue-950 text-white px-2.5 py-1 flex items-center justify-between text-[7.5px] border-t border-amber-400">
+                        <span>ហ៊ុន សែន ទួលសំបួរ</span>
+                        <span className="font-english text-amber-300 font-bold">ID: {item.code}</span>
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
           ) : (
+            /* ==========================================================================
+               LANDSCAPE / HORIZONTAL ID CARD LAYOUT (កាតផ្ដេក 340px × 215px)
+               ========================================================================== */
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 justify-items-center print-card-grid">
               {cardItems.map((item) => (
                 <React.Fragment key={item.id}>
-                  {/* FRONT OF ID CARD */}
+                  {/* FRONT OF LANDSCAPE ID CARD */}
                   <div
                     className="w-[340px] h-[215px] bg-white rounded-2xl shadow-md border-2 border-slate-300 relative overflow-hidden flex flex-col justify-between print-card-item select-none"
                     style={{
@@ -364,11 +574,13 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
                   >
                     {/* Decorative Header Band */}
                     <div className="bg-gradient-to-r from-blue-950 via-indigo-900 to-blue-900 text-white px-3 py-1.5 flex items-center gap-2 border-b-2 border-amber-400">
-                      <img
-                        src={SCHOOL_LOGO_URL}
-                        alt="Logo"
-                        className="w-8 h-8 rounded-full bg-white p-0.5 object-cover scale-[1.38] flex-shrink-0 border border-amber-400 shadow-xs"
-                      />
+                      <div className="w-8 h-8 rounded-full bg-white p-0.5 overflow-hidden flex-shrink-0 border border-amber-400 shadow-xs flex items-center justify-center">
+                        <img
+                          src={SCHOOL_LOGO_URL}
+                          alt="Logo"
+                          className="w-full h-full object-cover scale-[1.38] rounded-full"
+                        />
+                      </div>
                       <div className="min-w-0 flex-1 leading-tight">
                         <div className="font-moul text-[10px] text-amber-300 font-bold truncate">
                           អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ
@@ -460,7 +672,7 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
                     </div>
                   </div>
 
-                  {/* OPTIONAL BACK SIDE OF ID CARD */}
+                  {/* OPTIONAL BACK SIDE OF LANDSCAPE ID CARD */}
                   {showBackSide && (
                     <div
                       className="w-[340px] h-[215px] bg-white rounded-2xl shadow-md border-2 border-slate-300 relative overflow-hidden flex flex-col justify-between print-card-item select-none"
@@ -514,7 +726,7 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
         {/* Modal Footer (Hidden when printing) */}
         <div className="pt-3 border-t border-slate-100 flex items-center justify-between no-print flex-shrink-0">
           <div className="text-xs text-slate-500 font-medium">
-            💡 គន្លឹះ៖ ពេលចុច <strong>បោះពុម្ព A4</strong> ប្រព័ន្ធនឹងលាក់ផ្ទាំងកម្មវិធីទាំងអស់ ហើយរៀបកាតជា ២ ជួរឈរលើក្រដាស A4 ដោយស្វ័យប្រវត្តិ។
+            💡 គន្លឹះ៖ អ្នកអាចប្ដូររវាង <strong>កាតបញ្ឈរ (៣ កាតក្នុង ១ ជួរ)</strong> និង <strong>កាតផ្ដេក (២ កាតក្នុង ១ ជួរ)</strong> មុនពេលចុចបោះពុម្ពលើក្រដាស A4។
           </div>
           <button
             type="button"

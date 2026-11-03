@@ -207,6 +207,17 @@ body {
     padding: 4px 0 !important;
   }
 
+  .print-card-grid-portrait {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+    justify-items: center !important;
+    align-items: start !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 4px 0 !important;
+  }
+
   .print-card-item {
     page-break-inside: avoid !important;
     break-inside: avoid !important;

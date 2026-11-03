@@ -10,8 +10,8 @@ import {
 import { Student, SchoolClass } from '../types/index.ts';
 
 /**
- * Renders the circular official school logo (with its gold border and 1.38x zoom)
- * onto an offscreen canvas and returns a PNG base64 string for ExcelJS embedding.
+ * Renders the circular official school logo (preserving exact aspect ratio like CSS object-cover
+ * with 1.38x zoom and gold ring border) onto an offscreen square canvas and returns a PNG base64 string.
  */
 async function getCircularLogoPngBase64(): Promise<string | null> {
   return new Promise((resolve) => {
@@ -20,7 +20,7 @@ async function getCircularLogoPngBase64(): Promise<string | null> {
       img.crossOrigin = 'anonymous';
       img.onload = () => {
         try {
-          const size = 240;
+          const size = 260;
           const canvas = document.createElement('canvas');
           canvas.width = size;
           canvas.height = size;
@@ -33,7 +33,7 @@ async function getCircularLogoPngBase64(): Promise<string | null> {
           const center = size / 2;
           const radius = size / 2 - 6;
 
-          // White circular base
+          // White circular base with circular clip
           ctx.save();
           ctx.beginPath();
           ctx.arc(center, center, radius, 0, Math.PI * 2);
@@ -42,11 +42,17 @@ async function getCircularLogoPngBase64(): Promise<string | null> {
           ctx.fill();
           ctx.clip();
 
-          // Draw scaled image (matching scale-[1.38] in PrintReportModal)
-          const scale = 1.38;
-          const drawSize = size * scale;
-          const offset = (size - drawSize) / 2;
-          ctx.drawImage(img, offset, offset, drawSize, drawSize);
+          // Preserve natural aspect ratio (identical to CSS object-cover + scale-[1.38])
+          const imgW = img.naturalWidth || img.width || size;
+          const imgH = img.naturalHeight || img.height || size;
+          const coverScale = Math.max(size / imgW, size / imgH);
+          const zoom = 1.38;
+          const drawW = imgW * coverScale * zoom;
+          const drawH = imgH * coverScale * zoom;
+          const offsetX = (size - drawW) / 2;
+          const offsetY = (size - drawH) / 2;
+
+          ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
           ctx.restore();
 
           // Outer gold/amber ring border (#f59e0b)
@@ -108,7 +114,7 @@ async function applyOfficialHeaderAndMetadata(
   options: {
     lastColIndex: number; // e.g. 9 for Col I (since Col A is margin, B..I = 8 columns)
     leftEndColLetter: string; // e.g. 'D'
-    centerStartColIndex: number; // e.g. 4 (0-indexed col E)
+    logoColOffset: number; // exact 0-based fractional column index for centered logo
     rightStartColLetter: string; // e.g. 'G'
     lastColLetter: string; // e.g. 'I'
     title: string;
@@ -128,7 +134,7 @@ async function applyOfficialHeaderAndMetadata(
   const {
     lastColIndex,
     leftEndColLetter,
-    centerStartColIndex,
+    logoColOffset,
     rightStartColLetter,
     lastColLetter,
     title,
@@ -207,7 +213,7 @@ async function applyOfficialHeaderAndMetadata(
   r4.font = { name: 'Segoe UI Symbol', size: 10, bold: true, color: { argb: 'FFD97706' } };
   r4.alignment = { horizontal: 'center', vertical: 'top' };
 
-  // Embed Official Circular School Logo in the center
+  // Embed Official Circular School Logo in the exact center with 1:1 fixed pixel aspect ratio
   const logoPng = await getCircularLogoPngBase64();
   if (logoPng) {
     const imageId = workbook.addImage({
@@ -215,8 +221,9 @@ async function applyOfficialHeaderAndMetadata(
       extension: 'png',
     });
     sheet.addImage(imageId, {
-      tl: { col: centerStartColIndex + 0.45, row: 1.15 } as any,
-      ext: { width: 78, height: 78 },
+      tl: { col: logoColOffset, row: 1.1 } as any,
+      ext: { width: 80, height: 80 },
+      editAs: 'oneCell',
     });
   }
 
@@ -454,7 +461,7 @@ export async function exportAttendanceReportToExcel(params: {
   await applyOfficialHeaderAndMetadata(workbook, sheet, {
     lastColIndex: 9, // Column I
     leftEndColLetter: 'D',
-    centerStartColIndex: 4, // Column E
+    logoColOffset: 4.65, // Centered across Columns E & F
     rightStartColLetter: 'G',
     lastColLetter: 'I',
     title: 'របាយការណ៍វត្តមាន និងអវត្តមានសិស្ស',
@@ -521,6 +528,7 @@ export async function exportAttendanceReportToExcel(params: {
       const row = sheet.getRow(currentRow);
       row.height = 25;
 
+      const rateNum = (item.stats?.attendanceRate ?? 100) / 100;
       const values = [
         idx + 1,
         item.student?.studentId || '',
@@ -529,12 +537,15 @@ export async function exportAttendanceReportToExcel(params: {
         item.stats?.present ?? 0,
         item.stats?.absentPermission ?? 0,
         item.stats?.absentNoPermission ?? 0,
-        `${item.stats?.attendanceRate ?? 100}%`,
+        rateNum,
       ];
 
       values.forEach((val, cIdx) => {
         const cell = row.getCell(cIdx + 2);
         cell.value = val;
+        if (cIdx === 7) {
+          cell.numFmt = '0%';
+        }
         cell.border = CELL_BORDER;
 
         const isBoldCol = cIdx === 2 || cIdx === 6 || cIdx === 7;
@@ -763,7 +774,7 @@ export async function exportExamReportToExcel(params: {
   await applyOfficialHeaderAndMetadata(workbook, sheet, {
     lastColIndex: 8, // Column H
     leftEndColLetter: 'D',
-    centerStartColIndex: 4, // Column E
+    logoColOffset: 4.15, // Centered in Column E
     rightStartColLetter: 'F',
     lastColLetter: 'H',
     title: 'ព្រឹត្តិបត្រពិន្ទុ និងចំណាត់ថ្នាក់សិស្សផ្លូវការ',
@@ -885,7 +896,7 @@ export async function exportStudentListToExcel(params: {
   await applyOfficialHeaderAndMetadata(workbook, sheet, {
     lastColIndex: 9, // Column I
     leftEndColLetter: 'D',
-    centerStartColIndex: 4, // Column E
+    logoColOffset: 4.5, // Centered across Columns E & F
     rightStartColLetter: 'G',
     lastColLetter: 'I',
     title: 'បញ្ជីឈ្មោះសិស្សផ្លូវការ',
