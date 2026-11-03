@@ -1,5 +1,46 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Times New Roman", "Time New Roman", "Khmer OS Battambang", "Battambang", Times, serif;
+  --font-khmer: "Times New Roman", "Time New Roman", "Khmer OS Battambang", "Battambang", Times, serif;
+  --font-english: "Times New Roman", "Time New Roman", Times, serif;
+  --font-battambang: "Khmer OS Battambang", "Battambang", "Times New Roman", Times, serif;
+  --font-moul: "Moul", "Khmer OS Muol", "Khmer OS Muol Light", cursive, serif;
+}
+
+/* ==========================================================================
+   KHMER (KHMER OS BATTAMBANG) & ENGLISH (TIMES NEW ROMAN) TYPOGRAPHY
+   ពុម្ពអក្សរខ្មែរ Khmer OS Battambang និងអក្សរអង់គ្លេស Times New Roman
+   ========================================================================== */
+
+:root {
+  font-family: "Times New Roman", "Time New Roman", "Khmer OS Battambang", "Battambang", Times, serif;
+}
+
+html,
+body {
+  font-family: "Times New Roman", "Time New Roman", "Khmer OS Battambang", "Battambang", Times, serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-khmer,
+.font-sans {
+  font-family: "Times New Roman", "Time New Roman", "Khmer OS Battambang", "Battambang", Times, serif !important;
+}
+
+.font-english {
+  font-family: "Times New Roman", "Time New Roman", Times, serif !important;
+}
+
+.font-battambang {
+  font-family: "Khmer OS Battambang", "Battambang", "Times New Roman", Times, serif !important;
+}
+
+.font-moul {
+  font-family: "Moul", "Khmer OS Muol", "Khmer OS Muol Light", cursive, serif !important;
+}
+
 /* ==========================================================================
    DYNAMIC RGB LIGHTING & BELL ANIMATIONS
    ភ្លើង RGB ចលនាហូរសក្ដានុពល និងចលនាកណ្ដឹងរោទ៍ជូនដំណឹង
@@ -110,6 +151,7 @@
     min-height: auto !important;
     overflow: visible !important;
     font-size: 11pt !important;
+    font-family: "Times New Roman", "Time New Roman", "Khmer OS Battambang", "Battambang", Times, serif !important;
   }
 
   /* 4. Flatten modal overlay into normal print flow */
