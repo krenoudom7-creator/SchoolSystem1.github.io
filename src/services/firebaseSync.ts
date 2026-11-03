@@ -166,7 +166,11 @@ export async function removeStudentFromCloud(studentId: string): Promise<void> {
   const path = `students/${studentId}`;
   try {
     await deleteDoc(doc(db, 'students', studentId));
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'permission-denied' || error?.message?.includes('insufficient permissions')) {
+      console.warn(`Cloud delete skipped for ${path} (unauthenticated session): local deletion persisted.`);
+      return;
+    }
     handleFirestoreError(error, OperationType.DELETE, path);
   }
 }
@@ -184,7 +188,11 @@ export async function removeTeacherFromCloud(teacherId: string): Promise<void> {
   const path = `teachers/${teacherId}`;
   try {
     await deleteDoc(doc(db, 'teachers', teacherId));
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'permission-denied' || error?.message?.includes('insufficient permissions')) {
+      console.warn(`Cloud delete skipped for ${path} (unauthenticated session): local deletion persisted.`);
+      return;
+    }
     handleFirestoreError(error, OperationType.DELETE, path);
   }
 }
@@ -202,7 +210,11 @@ export async function removeClassFromCloud(classId: string): Promise<void> {
   const path = `classes/${classId}`;
   try {
     await deleteDoc(doc(db, 'classes', classId));
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'permission-denied' || error?.message?.includes('insufficient permissions')) {
+      console.warn(`Cloud delete skipped for ${path} (unauthenticated session): local deletion persisted.`);
+      return;
+    }
     handleFirestoreError(error, OperationType.DELETE, path);
   }
 }

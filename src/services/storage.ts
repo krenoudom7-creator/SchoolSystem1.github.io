@@ -133,7 +133,72 @@ const INITIAL_CLASSES: SchoolClass[] = [
   },
 ];
 
-const INITIAL_TEACHERS: Teacher[] = [];
+const INITIAL_TEACHERS: Teacher[] = [
+  {
+    id: 'tch-1',
+    teacherId: 'TCH-001',
+    name: 'កែវ សុខា',
+    gender: 'ស្រី',
+    dob: '1985-04-12',
+    phone: '012 345 671',
+    email: 'keo.sokha@toulsambour.edu.kh',
+    address: 'ភូមិទួលសំបួរ ឃុំទួលសំបួរ ស្រុកស្ទឹងត្រង់',
+    subjects: ['ភាសាខ្មែរ', 'ប្រវត្តិវិទ្យា', 'ពលរដ្ឋវិទ្យា'],
+    assignedClassId: 'cls-7a',
+    joinDate: '2015-10-01',
+    status: 'កំពុងបង្រៀន',
+    degree: 'បរិញ្ញាបត្រអក្សរសាស្ត្រខ្មែរ (NIE)',
+    photo: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
+  },
+  {
+    id: 'tch-2',
+    teacherId: 'TCH-002',
+    name: 'ចាន់ ណារិន',
+    gender: 'ប្រុស',
+    dob: '1982-08-20',
+    phone: '097 555 123',
+    email: 'chan.narin@toulsambour.edu.kh',
+    address: 'ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម',
+    subjects: ['គណិតវិទ្យា', 'រូបវិទ្យា'],
+    assignedClassId: 'cls-7b',
+    joinDate: '2012-10-01',
+    status: 'កំពុងបង្រៀន',
+    degree: 'បរិញ្ញាបត្រគណិតវិទ្យា (NIE)',
+    photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+  },
+  {
+    id: 'tch-3',
+    teacherId: 'TCH-003',
+    name: 'សេង វិបុល',
+    gender: 'ប្រុស',
+    dob: '1989-11-15',
+    phone: '088 777 888',
+    email: 'seng.vibul@toulsambour.edu.kh',
+    address: 'ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម',
+    subjects: ['គីមីវិទ្យា', 'ជីវវិទ្យា', 'ផែនដីវិទ្យា'],
+    assignedClassId: 'cls-8a',
+    joinDate: '2018-10-01',
+    status: 'កំពុងបង្រៀន',
+    degree: 'បរិញ្ញាបត្រវិទ្យាសាស្ត្រ (NIE)',
+    photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
+  },
+  {
+    id: 'tch-4',
+    teacherId: 'TCH-004',
+    name: 'ប៊ុន ថុល',
+    gender: 'ប្រុស',
+    dob: '1990-03-25',
+    phone: '010 999 000',
+    email: 'bun.thol@toulsambour.edu.kh',
+    address: 'ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម',
+    subjects: ['ភាសាអង់គ្លេស', 'បច្ចេកវិទ្យា/ICT'],
+    assignedClassId: 'cls-9a',
+    joinDate: '2019-10-01',
+    status: 'កំពុងបង្រៀន',
+    degree: 'បរិញ្ញាបត្រភាសាអង់គ្លេស (RUPP)',
+    photo: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150',
+  },
+];
 
 const INITIAL_SUBJECTS: Subject[] = [
   { id: 'sbj-khmer', code: 'KHM-07', nameKm: 'ភាសាខ្មែរ', nameEn: 'Khmer Language', gradeLevel: 'ថ្នាក់ទី ៧', hoursPerWeek: 6, teacherName: 'កែវ សុខា' },
@@ -156,7 +221,37 @@ const INITIAL_ATTENDANCE_SESSIONS: AttendanceSession[] = [];
 
 const INITIAL_ATTENDANCE_RECORDS: AttendanceRecord[] = [];
 
-const INITIAL_TIMETABLE: TimetableSlot[] = [];
+const INITIAL_TIMETABLE: TimetableSlot[] = [
+  // ថ្នាក់ទី ៧ ក (cls-7a)
+  { id: 'tt-1', classId: 'cls-7a', dayOfWeek: 'ច័ន្ទ', period: 1, startTime: '07:00', endTime: '07:50', subjectId: 'sbj-math', subjectName: 'គណិតវិទ្យា', teacherId: 'tch-2', teacherName: 'ចាន់ ណារិន', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-2', classId: 'cls-7a', dayOfWeek: 'ច័ន្ទ', period: 2, startTime: '07:55', endTime: '08:45', subjectId: 'sbj-khmer', subjectName: 'ភាសាខ្មែរ', teacherId: 'tch-1', teacherName: 'កែវ សុខា', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-3', classId: 'cls-7a', dayOfWeek: 'ច័ន្ទ', period: 3, startTime: '09:00', endTime: '09:50', subjectId: 'sbj-physics', subjectName: 'រូបវិទ្យា', teacherId: 'tch-2', teacherName: 'ចាន់ ណារិន', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-4', classId: 'cls-7a', dayOfWeek: 'ច័ន្ទ', period: 4, startTime: '09:55', endTime: '10:45', subjectId: 'sbj-eng', subjectName: 'ភាសាអង់គ្លេស', teacherId: 'tch-4', teacherName: 'ប៊ុន ថុល', room: 'បន្ទប់ ១០១' },
+
+  { id: 'tt-5', classId: 'cls-7a', dayOfWeek: 'អង្គារ', period: 1, startTime: '07:00', endTime: '07:50', subjectId: 'sbj-khmer', subjectName: 'ភាសាខ្មែរ', teacherId: 'tch-1', teacherName: 'កែវ សុខា', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-6', classId: 'cls-7a', dayOfWeek: 'អង្គារ', period: 2, startTime: '07:55', endTime: '08:45', subjectId: 'sbj-chem', subjectName: 'គីមីវិទ្យា', teacherId: 'tch-3', teacherName: 'សេង វិបុល', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-7', classId: 'cls-7a', dayOfWeek: 'អង្គារ', period: 3, startTime: '09:00', endTime: '09:50', subjectId: 'sbj-bio', subjectName: 'ជីវវិទ្យា', teacherId: 'tch-3', teacherName: 'សេង វិបុល', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-8', classId: 'cls-7a', dayOfWeek: 'អង្គារ', period: 4, startTime: '09:55', endTime: '10:45', subjectId: 'sbj-history', subjectName: 'ប្រវត្តិវិទ្យា', teacherId: 'tch-1', teacherName: 'កែវ សុខា', room: 'បន្ទប់ ១០១' },
+
+  { id: 'tt-9', classId: 'cls-7a', dayOfWeek: 'ពុធ', period: 1, startTime: '07:00', endTime: '07:50', subjectId: 'sbj-math', subjectName: 'គណិតវិទ្យា', teacherId: 'tch-2', teacherName: 'ចាន់ ណារិន', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-10', classId: 'cls-7a', dayOfWeek: 'ពុធ', period: 2, startTime: '07:55', endTime: '08:45', subjectId: 'sbj-earth', subjectName: 'ផែនដីវិទ្យា', teacherId: 'tch-3', teacherName: 'សេង វិបុល', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-11', classId: 'cls-7a', dayOfWeek: 'ពុធ', period: 3, startTime: '09:00', endTime: '09:50', subjectId: 'sbj-eng', subjectName: 'ភាសាអង់គ្លេស', teacherId: 'tch-4', teacherName: 'ប៊ុន ថុល', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-12', classId: 'cls-7a', dayOfWeek: 'ពុធ', period: 4, startTime: '09:55', endTime: '10:45', subjectId: 'sbj-ict', subjectName: 'បច្ចេកវិទ្យា/ICT', teacherId: 'tch-4', teacherName: 'ប៊ុន ថុល', room: 'បន្ទប់កុំព្យូទ័រ' },
+
+  { id: 'tt-13', classId: 'cls-7a', dayOfWeek: 'ព្រហស្បតិ៍', period: 1, startTime: '07:00', endTime: '07:50', subjectId: 'sbj-khmer', subjectName: 'ភាសាខ្មែរ', teacherId: 'tch-1', teacherName: 'កែវ សុខា', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-14', classId: 'cls-7a', dayOfWeek: 'ព្រហស្បតិ៍', period: 2, startTime: '07:55', endTime: '08:45', subjectId: 'sbj-math', subjectName: 'គណិតវិទ្យា', teacherId: 'tch-2', teacherName: 'ចាន់ ណារិន', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-15', classId: 'cls-7a', dayOfWeek: 'ព្រហស្បតិ៍', period: 3, startTime: '09:00', endTime: '09:50', subjectId: 'sbj-geo', subjectName: 'ភូមិវិទ្យា', teacherId: 'tch-1', teacherName: 'កែវ សុខា', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-16', classId: 'cls-7a', dayOfWeek: 'ព្រហស្បតិ៍', period: 4, startTime: '09:55', endTime: '10:45', subjectId: 'sbj-civics', subjectName: 'ពលរដ្ឋវិទ្យា', teacherId: 'tch-1', teacherName: 'កែវ សុខា', room: 'បន្ទប់ ១០១' },
+
+  { id: 'tt-17', classId: 'cls-7a', dayOfWeek: 'សុក្រ', period: 1, startTime: '07:00', endTime: '07:50', subjectId: 'sbj-physics', subjectName: 'រូបវិទ្យា', teacherId: 'tch-2', teacherName: 'ចាន់ ណារិន', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-18', classId: 'cls-7a', dayOfWeek: 'សុក្រ', period: 2, startTime: '07:55', endTime: '08:45', subjectId: 'sbj-bio', subjectName: 'ជីវវិទ្យា', teacherId: 'tch-3', teacherName: 'សេង វិបុល', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-19', classId: 'cls-7a', dayOfWeek: 'សុក្រ', period: 3, startTime: '09:00', endTime: '09:50', subjectId: 'sbj-khmer', subjectName: 'ភាសាខ្មែរ', teacherId: 'tch-1', teacherName: 'កែវ សុខា', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-20', classId: 'cls-7a', dayOfWeek: 'សុក្រ', period: 4, startTime: '09:55', endTime: '10:45', subjectId: 'sbj-eng', subjectName: 'ភាសាអង់គ្លេស', teacherId: 'tch-4', teacherName: 'ប៊ុន ថុល', room: 'បន្ទប់ ១០១' },
+
+  { id: 'tt-21', classId: 'cls-7a', dayOfWeek: 'សៅរ៍', period: 1, startTime: '07:00', endTime: '07:50', subjectId: 'sbj-math', subjectName: 'គណិតវិទ្យា', teacherId: 'tch-2', teacherName: 'ចាន់ ណារិន', room: 'បន្ទប់ ១០១' },
+  { id: 'tt-22', classId: 'cls-7a', dayOfWeek: 'សៅរ៍', period: 2, startTime: '07:55', endTime: '08:45', subjectId: 'sbj-pe', subjectName: 'អប់រំកាយ និងកីឡា', teacherId: 'tch-2', teacherName: 'ចាន់ ណារិន', room: 'ទីលានកីឡា' },
+  { id: 'tt-23', classId: 'cls-7a', dayOfWeek: 'សៅរ៍', period: 3, startTime: '09:00', endTime: '09:50', subjectId: 'sbj-khmer', subjectName: 'ភាសាខ្មែរ', teacherId: 'tch-1', teacherName: 'កែវ សុខា', room: 'បន្ទប់ ១០១' },
+];
 
 const INITIAL_EXAMS: Exam[] = [
   {
@@ -384,6 +479,8 @@ class StorageService {
           parsed.behaviorRecords = parsed.behaviorRecords && parsed.behaviorRecords.length > 0
             ? parsed.behaviorRecords
             : INITIAL_BEHAVIOR_RECORDS;
+          parsed.teachers = parsed.teachers && parsed.teachers.length > 0 ? parsed.teachers : INITIAL_TEACHERS;
+          parsed.timetable = parsed.timetable && parsed.timetable.length > 0 ? parsed.timetable : INITIAL_TIMETABLE;
           if (!parsed.telegramSettings || parsed.telegramSettings.botToken?.includes('Simulated') || !parsed.telegramSettings.botUsername) {
             parsed.telegramSettings = {
               botUsername: '@machin_caffee_bot',
@@ -575,6 +672,34 @@ class StorageService {
     return true;
   }
 
+  public bulkDeleteStudents(ids: string[], actorName = 'Admin'): number {
+    if (!this.db.students || ids.length === 0) return 0;
+    const idsSet = new Set(ids);
+    const toDelete = this.db.students.filter((s) => idsSet.has(s.id) || idsSet.has(s.studentId));
+    if (toDelete.length === 0) return 0;
+
+    this.db.students = this.db.students.filter((s) => !idsSet.has(s.id) && !idsSet.has(s.studentId));
+
+    // Update class student counts
+    this.db.classes.forEach((c) => {
+      c.currentStudentCount = this.db.students.filter((s) => s.classId === c.id).length;
+    });
+
+    this.logAudit(
+      actorName,
+      'admin',
+      'លុបសិស្សជាបណ្តុំ',
+      `បានលុបសិស្សចំនួន ${toDelete.length} នាក់ចេញពីប្រព័ន្ធ`
+    );
+    this.saveDatabase(this.db);
+
+    toDelete.forEach((s) => {
+      removeStudentFromCloud(s.id).catch((e) => console.warn('Cloud sync bulk delete error:', e));
+    });
+
+    return toDelete.length;
+  }
+
   // Teachers
   public getTeachers(): Teacher[] {
     return this.db.teachers;
@@ -710,6 +835,9 @@ class StorageService {
 
   // Timetable
   public getTimetable(classId?: string, teacherId?: string): TimetableSlot[] {
+    if (!this.db.timetable) {
+      this.db.timetable = [];
+    }
     let slots = this.db.timetable;
     if (classId && classId !== 'all') {
       slots = slots.filter((t) => t.classId === classId);
@@ -720,14 +848,124 @@ class StorageService {
     return slots;
   }
 
-  public addTimetableSlot(slot: Omit<TimetableSlot, 'id'>): TimetableSlot {
+  public checkTimetableConflict(
+    teacherId: string,
+    dayOfWeek: string,
+    period: number,
+    excludeId?: string
+  ): { hasConflict: boolean; conflictingSlot?: TimetableSlot; message?: string } {
+    if (!this.db.timetable || !teacherId) return { hasConflict: false };
+    const conflict = this.db.timetable.find(
+      (t) =>
+        t.teacherId === teacherId &&
+        t.dayOfWeek === dayOfWeek &&
+        t.period === period &&
+        t.id !== excludeId
+    );
+
+    if (conflict) {
+      const cls = this.db.classes.find((c) => c.id === conflict.classId);
+      return {
+        hasConflict: true,
+        conflictingSlot: conflict,
+        message: `លោកគ្រូ/អ្នកគ្រូមានម៉ោងបង្រៀនរួចហើយនៅថ្ងៃ${dayOfWeek} ម៉ោងទី ${period} នៅ ${cls?.name || 'ថ្នាក់ផ្សេង'} (${conflict.subjectName || ''})`,
+      };
+    }
+    return { hasConflict: false };
+  }
+
+  public addTimetableSlot(slot: Omit<TimetableSlot, 'id'>, actorName = 'Admin'): TimetableSlot {
     const newSlot: TimetableSlot = {
       ...slot,
-      id: `tt-${Date.now()}`,
+      id: `tt-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     };
+    if (!this.db.timetable) {
+      this.db.timetable = [];
+    }
     this.db.timetable.push(newSlot);
+    this.logAudit(
+      actorName,
+      'admin',
+      'បន្ថែមកាលវិភាគ',
+      `បន្ថែមកាលវិភាគ ${newSlot.subjectName || ''} ថ្ងៃ${newSlot.dayOfWeek} ម៉ោងទី ${newSlot.period} (គ្រូ៖ ${newSlot.teacherName || ''})`
+    );
     this.saveDatabase(this.db);
     return newSlot;
+  }
+
+  public updateTimetableSlot(
+    id: string,
+    updates: Partial<TimetableSlot>,
+    actorName = 'Admin'
+  ): boolean {
+    if (!this.db.timetable) return false;
+    const index = this.db.timetable.findIndex((t) => t.id === id);
+    if (index === -1) return false;
+    this.db.timetable[index] = { ...this.db.timetable[index], ...updates };
+    this.logAudit(
+      actorName,
+      'admin',
+      'កែប្រែកាលវិភាគ',
+      `កែប្រែកាលវិភាគ ${this.db.timetable[index].subjectName || ''} ថ្ងៃ${this.db.timetable[index].dayOfWeek} ម៉ោងទី ${this.db.timetable[index].period}`
+    );
+    this.saveDatabase(this.db);
+    return true;
+  }
+
+  public deleteTimetableSlot(id: string, actorName = 'Admin'): boolean {
+    if (!this.db.timetable) return false;
+    const slot = this.db.timetable.find((t) => t.id === id);
+    if (!slot) return false;
+    this.db.timetable = this.db.timetable.filter((t) => t.id !== id);
+    this.logAudit(
+      actorName,
+      'admin',
+      'លុបកាលវិភាគ',
+      `លុបម៉ោងបង្រៀន ${slot.subjectName || ''} ថ្ងៃ${slot.dayOfWeek} ម៉ោងទី ${slot.period}`
+    );
+    this.saveDatabase(this.db);
+    return true;
+  }
+
+  public saveTimetableSlot(
+    slotData: Omit<TimetableSlot, 'id'> & { id?: string },
+    actorName = 'Admin'
+  ): TimetableSlot {
+    if (!this.db.timetable) this.db.timetable = [];
+
+    if (slotData.id) {
+      const idx = this.db.timetable.findIndex((t) => t.id === slotData.id);
+      if (idx !== -1) {
+        this.db.timetable[idx] = {
+          ...this.db.timetable[idx],
+          ...slotData,
+          id: slotData.id,
+        };
+        this.saveDatabase(this.db);
+        return this.db.timetable[idx];
+      }
+    }
+
+    // Replace if exact slot exists for that class, day, and period
+    const existingIndex = this.db.timetable.findIndex(
+      (t) =>
+        t.classId === slotData.classId &&
+        t.dayOfWeek === slotData.dayOfWeek &&
+        t.period === slotData.period
+    );
+
+    if (existingIndex !== -1) {
+      const updated: TimetableSlot = {
+        ...this.db.timetable[existingIndex],
+        ...slotData,
+        id: this.db.timetable[existingIndex].id,
+      };
+      this.db.timetable[existingIndex] = updated;
+      this.saveDatabase(this.db);
+      return updated;
+    }
+
+    return this.addTimetableSlot(slotData, actorName);
   }
 
   // Attendance

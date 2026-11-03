@@ -18,6 +18,8 @@ import {
   Upload,
   CreditCard,
   FileCheck,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { Student, SchoolClass, Gender, StudentStatus } from '../types/index.ts';
 import { storage } from '../services/storage.ts';
@@ -51,6 +53,8 @@ export const StudentView: React.FC<StudentViewProps> = ({
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
   const [selectedStudentForCert, setSelectedStudentForCert] = useState<Student | undefined>(undefined);
   const [importNotification, setImportNotification] = useState<string>('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -132,17 +136,45 @@ export const StudentView: React.FC<StudentViewProps> = ({
     onRefresh();
   };
 
-  // Confirm delete
+  // Confirm single delete
   const handleDelete = () => {
     if (deleteConfirmStudent) {
       storage.deleteStudent(deleteConfirmStudent.id);
+      setSelectedIds((prev) => prev.filter((id) => id !== deleteConfirmStudent.id));
       setDeleteConfirmStudent(null);
+      setImportNotification(`បានលុបសិស្សឈ្មោះ «${deleteConfirmStudent.khmerName}» ដោយជោគជ័យ!`);
+      setTimeout(() => setImportNotification(''), 4000);
       onRefresh();
     }
   };
 
   // Filter students
   const filteredStudents = storage.getStudents(selectedClassId, searchQuery);
+
+  // Handle bulk delete
+  const handleBulkDelete = () => {
+    if (selectedIds.length === 0) return;
+    const deletedCount = storage.bulkDeleteStudents(selectedIds);
+    setSelectedIds([]);
+    setIsBulkDeleteModalOpen(false);
+    setImportNotification(`បានលុបសិស្សចំនួន ${deletedCount} នាក់ចេញពីប្រព័ន្ធដោយជោគជ័យ!`);
+    setTimeout(() => setImportNotification(''), 4000);
+    onRefresh();
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedIds.length === filteredStudents.length && filteredStudents.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredStudents.map((s) => s.id));
+    }
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
   // Export students to CSV
   const handleExportCsv = () => {
@@ -289,17 +321,82 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
       {/* Students Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-xs font-bold text-slate-900">
-            បញ្ជីសិស្សសរុប ({filteredStudents.length} នាក់)
-          </h3>
+        <div className="p-4 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h3 className="text-xs font-bold text-slate-900">
+              បញ្ជីសិស្សសរុប ({filteredStudents.length} នាក់)
+            </h3>
+
+            {filteredStudents.length > 0 && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleToggleSelectAll}
+                  className="text-xs text-blue-900 hover:text-blue-950 font-semibold cursor-pointer"
+                >
+                  {selectedIds.length === filteredStudents.length && filteredStudents.length > 0
+                    ? 'ដកការជ្រើសរើសទាំងអស់'
+                    : 'ជ្រើសរើសទាំងអស់'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Bulk Action Toolbar when students are selected */}
+        {selectedIds.length > 0 && (
+          <div className="bg-rose-50 border border-rose-200 p-3 rounded-2xl mb-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
+              <span className="text-xs font-bold text-rose-900">
+                បានជ្រើសរើសសិស្សចំនួន {selectedIds.length} នាក់
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setSelectedIds([])}
+                className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded-lg cursor-pointer"
+              >
+                បោះបង់
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsIdCardModalOpen(true)}
+                className="px-3 py-1.5 text-xs font-semibold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-lg cursor-pointer flex items-center gap-1.5"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>បោះពុម្ពកាត ({selectedIds.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsBulkDeleteModalOpen(true)}
+                className="px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>🗑️ លុបសិស្សដែលបានជ្រើសរើស ({selectedIds.length} នាក់)</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 text-[11px] font-semibold text-slate-600 border-b border-slate-200">
-                <th className="py-2.5 px-3 text-center w-12">ល.រ</th>
+                <th className="py-2.5 px-3 text-center w-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.length === filteredStudents.length && filteredStudents.length > 0}
+                    onChange={handleToggleSelectAll}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-900 cursor-pointer"
+                    title="ជ្រើសរើសទាំងអស់"
+                  />
+                </th>
+                <th className="py-2.5 px-2 text-center w-12">ល.រ</th>
                 <th className="py-2.5 px-3 w-28">អត្តលេខ</th>
                 <th className="py-2.5 px-3">គោត្តនាម និងនាម</th>
                 <th className="py-2.5 px-2 text-center w-16">ភេទ</th>
@@ -316,8 +413,21 @@ export const StudentView: React.FC<StudentViewProps> = ({
                 const targetClass = classes.find((c) => c.id === student.classId);
 
                 return (
-                  <tr key={student.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3 px-3 text-center text-slate-400 font-medium">{idx + 1}</td>
+                  <tr
+                    key={student.id}
+                    className={`transition-colors ${
+                      selectedIds.includes(student.id) ? 'bg-blue-50/70 hover:bg-blue-50' : 'hover:bg-slate-50/60'
+                    }`}
+                  >
+                    <td className="py-3 px-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(student.id)}
+                        onChange={() => handleToggleSelect(student.id)}
+                        className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-900 cursor-pointer"
+                      />
+                    </td>
+                    <td className="py-3 px-2 text-center text-slate-400 font-medium">{idx + 1}</td>
                     <td className="py-3 px-3 font-mono font-bold text-slate-700">
                       {student.studentId}
                     </td>
@@ -402,7 +512,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
               {filteredStudents.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-xs text-slate-400">
+                  <td colSpan={11} className="py-12 text-center text-xs text-slate-400">
                     <GraduationCap className="w-10 h-10 text-slate-300 mx-auto mb-2" />
                     <p className="font-semibold text-slate-600 text-sm">មិនទាន់មានទិន្នន័យសិស្សនៅឡើយទេ</p>
                     <p className="text-slate-400 mt-1 mb-3">អ្នកអាចចាប់ផ្ដើមបញ្ចូលទិន្នន័យសិស្សថ្មីបានដោយចុចប៊ូតុងខាងក្រោម</p>
@@ -717,6 +827,40 @@ export const StudentView: React.FC<StudentViewProps> = ({
                 className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs cursor-pointer"
               >
                 បាទ/ចាស លុប
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {isBulkDeleteModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in">
+            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-900 text-center font-moul">
+              តើអ្នកប្រាកដជាចង់លុបសិស្សដែលបានជ្រើសរើសទាំង {selectedIds.length} នាក់នេះមែនទេ?
+            </h3>
+            <p className="text-xs text-slate-500 text-center mt-2 leading-relaxed">
+              សិស្សដែលបានជ្រើសរើសទាំង <strong className="text-rose-700">{selectedIds.length} នាក់</strong> នឹងត្រូវលុបចេញពីប្រព័ន្ធ និងចេញពី Central Cloud Firestore ជាស្វ័យប្រវត្តិ។ សកម្មភាពនេះមិនអាចត្រឡប់ក្រោយវិញបានទេ។
+            </p>
+
+            <div className="mt-5 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsBulkDeleteModalOpen(false)}
+                className="px-4 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
+              >
+                បោះបង់
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkDelete}
+                className="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs cursor-pointer transition-colors"
+              >
+                បាទ/ចាស លុបសិស្សទាំង {selectedIds.length} នាក់
               </button>
             </div>
           </div>

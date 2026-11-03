@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import QRCode from 'qrcode';
 import {
   Printer,
@@ -50,11 +50,9 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
   const [cardItems, setCardItems] = useState<CardItem[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'single'>('grid');
 
-  if (!isOpen) return null;
-
   // Filter available items
-  const availableItems: CardItem[] =
-    targetType === 'student'
+  const availableItems: CardItem[] = useMemo(() => {
+    return targetType === 'student'
       ? students
           .filter((s) => selectedClassId === 'all' || s.classId === selectedClassId)
           .map((s) => ({
@@ -66,7 +64,7 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
             dob: s.dob,
             roleOrClass: classes.find((c) => c.id === s.classId)?.name || 'ថ្នាក់រៀន',
             photo: safeAvatar(s.photo, DEFAULT_STUDENT_AVATAR),
-            type: 'student',
+            type: 'student' as const,
           }))
       : teachers.map((t) => ({
           id: t.id,
@@ -77,16 +75,19 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
           dob: t.dob || '1988-01-01',
           roleOrClass: `គ្រូបង្រៀន (${t.subjects?.join(', ') || 'គរុកោសល្យ'})`,
           photo: safeAvatar(t.photo, DEFAULT_ADMIN_AVATAR),
-          type: 'teacher',
+          type: 'teacher' as const,
         }));
+  }, [targetType, selectedClassId, students, teachers, classes]);
 
   // Auto-select first 8 items when list changes
   useEffect(() => {
+    if (!isOpen) return;
     setSelectedIds(availableItems.slice(0, 8).map((i) => i.id));
-  }, [targetType, selectedClassId]);
+  }, [isOpen, targetType, selectedClassId, availableItems]);
 
   // Generate QR Codes for selected cards
   useEffect(() => {
+    if (!isOpen) return;
     const selectedList = availableItems.filter((i) => selectedIds.includes(i.id));
 
     Promise.all(
@@ -114,7 +115,7 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
     ).then((itemsWithQr) => {
       setCardItems(itemsWithQr);
     });
-  }, [selectedIds, targetType, selectedClassId]);
+  }, [isOpen, selectedIds, targetType, selectedClassId, availableItems]);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === availableItems.length) {
@@ -133,6 +134,8 @@ export const IdCardGeneratorModal: React.FC<IdCardGeneratorModalProps> = ({
   const handlePrint = () => {
     window.print();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-2 sm:p-4 backdrop-blur-xs animate-in fade-in">

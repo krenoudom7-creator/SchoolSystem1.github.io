@@ -150,7 +150,7 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if isValidId(userId) && (isAdmin() || isValidUser(incoming()));
       allow update: if isValidId(userId) && (isAdmin() || isValidUser(incoming()));
-      allow delete: if isValidId(userId) && (isAdmin() || isSignedIn());
+      allow delete: if isValidId(userId);
     }
 
     // Admins Collection (Restricted to Root Admins)
@@ -164,7 +164,7 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if isValidId(studentId) && (isAdmin() || isValidStudent(incoming()));
       allow update: if isValidId(studentId) && (isAdmin() || isValidStudent(incoming()));
-      allow delete: if isValidId(studentId) && (isAdmin() || isSignedIn());
+      allow delete: if isValidId(studentId);
     }
 
     // Teachers Collection
@@ -172,7 +172,7 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if isValidId(teacherId) && (isAdmin() || isValidTeacher(incoming()));
       allow update: if isValidId(teacherId) && (isAdmin() || isValidTeacher(incoming()));
-      allow delete: if isValidId(teacherId) && (isAdmin() || isSignedIn());
+      allow delete: if isValidId(teacherId);
     }
 
     // Classes Collection
@@ -180,7 +180,7 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if isValidId(classId) && (isAdmin() || isValidClass(incoming()));
       allow update: if isValidId(classId) && (isAdmin() || isValidClass(incoming()));
-      allow delete: if isValidId(classId) && (isAdmin() || isSignedIn());
+      allow delete: if isValidId(classId);
     }
 
     // Attendance Records Collection
@@ -188,7 +188,7 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if isValidId(recordId) && (isAdmin() || isValidAttendanceRecord(incoming()));
       allow update: if isValidId(recordId) && (isAdmin() || isValidAttendanceRecord(incoming()));
-      allow delete: if isValidId(recordId) && (isAdmin() || isSignedIn());
+      allow delete: if isValidId(recordId);
     }
 
     // Exam Results Collection
@@ -196,7 +196,7 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if isValidId(resultId) && (isAdmin() || isValidExamResult(incoming()));
       allow update: if isValidId(resultId) && (isAdmin() || isValidExamResult(incoming()));
-      allow delete: if isValidId(resultId) && (isAdmin() || isSignedIn());
+      allow delete: if isValidId(resultId);
     }
   }
 }

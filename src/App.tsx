@@ -253,6 +253,7 @@ export default function App() {
               classes={dbState.classes}
               teachers={dbState.teachers}
               subjects={dbState.subjects}
+              onRefresh={handleRefresh}
             />
           )}
 

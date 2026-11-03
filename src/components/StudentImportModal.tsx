@@ -326,6 +326,14 @@ export const StudentImportModal: React.FC<StudentImportModalProps> = ({
             </div>
           </div>
 
+          {/* Reassurance Notice about Deletion */}
+          <div className="p-3 bg-blue-50/90 border border-blue-200 rounded-xl text-[11px] text-blue-900 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-blue-700 flex-shrink-0" />
+            <span>
+              <strong>ការធានាសុវត្ថិភាពទិន្នន័យ៖</strong> ក្រោយពេលនាំចូលរួច លោកគ្រូអ្នកគ្រូអាចកែប្រែ ឬលុបសិស្សវិញបានគ្រប់ពេល ទាំងលុបទោល (🗑️) ឬជ្រើសរើសលុបជាបណ្តុំច្រើននាក់ (Bulk Delete) ក្នុងតារាងសិស្សបានយ៉ាងងាយស្រួល។
+            </span>
+          </div>
+
           {/* Upload Box or Paste Text */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
