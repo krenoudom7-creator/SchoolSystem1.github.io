@@ -151,21 +151,48 @@ export function stopFirestoreSync(): void {
 }
 
 /**
+ * Helper to strip undefined fields recursively and ensure valid Firestore document payloads
+ */
+function sanitizeForFirestore<T>(obj: T): T {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => sanitizeForFirestore(item)) as unknown as T;
+  }
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, any>)) {
+    if (value !== undefined) {
+      cleaned[key] = sanitizeForFirestore(value);
+    }
+  }
+  return cleaned as T;
+}
+
+export function toSafeFirestoreId(rawId: string, prefix = 'doc'): string {
+  const cleaned = (rawId || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 120);
+  return cleaned.length > 0 ? cleaned : `${prefix}_${Date.now()}`;
+}
+
+/**
  * Firestore Mutations with Standard Error Handling
  */
 export async function syncStudentToCloud(student: Student): Promise<void> {
-  const path = `students/${student.id}`;
+  const safeId = toSafeFirestoreId(student.id, 'stu');
+  const path = `students/${safeId}`;
   try {
-    await setDoc(doc(db, 'students', student.id), student);
+    const payload = sanitizeForFirestore({ ...student, id: safeId });
+    await setDoc(doc(db, 'students', safeId), payload);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
 
 export async function removeStudentFromCloud(studentId: string): Promise<void> {
-  const path = `students/${studentId}`;
+  const safeId = toSafeFirestoreId(studentId, 'stu');
+  const path = `students/${safeId}`;
   try {
-    await deleteDoc(doc(db, 'students', studentId));
+    await deleteDoc(doc(db, 'students', safeId));
   } catch (error: any) {
     if (error?.code === 'permission-denied' || error?.message?.includes('insufficient permissions')) {
       console.warn(`Cloud delete skipped for ${path} (unauthenticated session): local deletion persisted.`);
@@ -176,18 +203,21 @@ export async function removeStudentFromCloud(studentId: string): Promise<void> {
 }
 
 export async function syncTeacherToCloud(teacher: Teacher): Promise<void> {
-  const path = `teachers/${teacher.id}`;
+  const safeId = toSafeFirestoreId(teacher.id, 'tch');
+  const path = `teachers/${safeId}`;
   try {
-    await setDoc(doc(db, 'teachers', teacher.id), teacher);
+    const payload = sanitizeForFirestore({ ...teacher, id: safeId });
+    await setDoc(doc(db, 'teachers', safeId), payload);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
 
 export async function removeTeacherFromCloud(teacherId: string): Promise<void> {
-  const path = `teachers/${teacherId}`;
+  const safeId = toSafeFirestoreId(teacherId, 'tch');
+  const path = `teachers/${safeId}`;
   try {
-    await deleteDoc(doc(db, 'teachers', teacherId));
+    await deleteDoc(doc(db, 'teachers', safeId));
   } catch (error: any) {
     if (error?.code === 'permission-denied' || error?.message?.includes('insufficient permissions')) {
       console.warn(`Cloud delete skipped for ${path} (unauthenticated session): local deletion persisted.`);
@@ -198,18 +228,21 @@ export async function removeTeacherFromCloud(teacherId: string): Promise<void> {
 }
 
 export async function syncClassToCloud(cls: SchoolClass): Promise<void> {
-  const path = `classes/${cls.id}`;
+  const safeId = toSafeFirestoreId(cls.id, 'cls');
+  const path = `classes/${safeId}`;
   try {
-    await setDoc(doc(db, 'classes', cls.id), cls);
+    const payload = sanitizeForFirestore({ ...cls, id: safeId });
+    await setDoc(doc(db, 'classes', safeId), payload);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
 
 export async function removeClassFromCloud(classId: string): Promise<void> {
-  const path = `classes/${classId}`;
+  const safeId = toSafeFirestoreId(classId, 'cls');
+  const path = `classes/${safeId}`;
   try {
-    await deleteDoc(doc(db, 'classes', classId));
+    await deleteDoc(doc(db, 'classes', safeId));
   } catch (error: any) {
     if (error?.code === 'permission-denied' || error?.message?.includes('insufficient permissions')) {
       console.warn(`Cloud delete skipped for ${path} (unauthenticated session): local deletion persisted.`);
@@ -220,28 +253,74 @@ export async function removeClassFromCloud(classId: string): Promise<void> {
 }
 
 export async function syncAttendanceRecordToCloud(record: AttendanceRecord): Promise<void> {
-  const path = `attendanceRecords/${record.id}`;
+  const safeId = toSafeFirestoreId(record.id, 'att');
+  const path = `attendanceRecords/${safeId}`;
   try {
-    await setDoc(doc(db, 'attendanceRecords', record.id), record);
+    const payload: Record<string, any> = {
+      id: safeId,
+      sessionId: String(record.sessionId || `sess-${record.classId}-${record.date}`).slice(0, 128),
+      studentId: String(record.studentId || '').slice(0, 128),
+      classId: String(record.classId || '').slice(0, 64),
+      date: String(record.date || '').slice(0, 32),
+      status: record.status || 'present',
+      recordedBy: String(record.recordedBy || 'admin').slice(0, 128),
+    };
+    if (record.studentName) payload.studentName = String(record.studentName).slice(0, 128);
+    if (record.reason !== undefined && record.reason !== null) {
+      payload.reason = String(record.reason).slice(0, 256);
+    }
+    if (record.recordedByName) payload.recordedByName = String(record.recordedByName).slice(0, 128);
+    if (record.subjectId) payload.subjectId = String(record.subjectId).slice(0, 64);
+    if (record.createdAt) payload.createdAt = String(record.createdAt).slice(0, 64);
+
+    await setDoc(doc(db, 'attendanceRecords', safeId), payload);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
 
-export async function syncExamResultToCloud(result: ExamResult): Promise<void> {
-  const path = `examResults/${result.id}`;
+export async function removeAttendanceRecordFromCloud(recordId: string): Promise<void> {
+  const safeId = toSafeFirestoreId(recordId, 'att');
+  const path = `attendanceRecords/${safeId}`;
   try {
-    await setDoc(doc(db, 'examResults', result.id), result);
+    await deleteDoc(doc(db, 'attendanceRecords', safeId));
+  } catch (error: any) {
+    if (error?.code === 'permission-denied' || error?.message?.includes('insufficient permissions')) {
+      console.warn(`Cloud delete skipped for ${path}: local deletion persisted.`);
+      return;
+    }
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export async function syncExamResultToCloud(result: ExamResult): Promise<void> {
+  const safeId = toSafeFirestoreId(result.id, 'res');
+  const path = `examResults/${safeId}`;
+  try {
+    const payload = sanitizeForFirestore({
+      ...result,
+      id: safeId,
+      totalScore: Number(result.totalScore) || 0,
+      average: Number(result.average) || 0,
+    });
+    await setDoc(doc(db, 'examResults', safeId), payload);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
 
 export async function syncUserToCloud(user: User): Promise<void> {
-  const path = `users/${user.id}`;
+  const safeId = toSafeFirestoreId(user.id, 'usr');
+  const path = `users/${safeId}`;
   try {
-    await setDoc(doc(db, 'users', user.id), user);
+    const payload = sanitizeForFirestore({
+      ...user,
+      id: safeId,
+      email: user.email || `${user.username || 'user'}@toulsambour.edu.kh`,
+    });
+    await setDoc(doc(db, 'users', safeId), payload);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
+

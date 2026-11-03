@@ -24,6 +24,7 @@ import {
   SchoolClass,
   Subject,
   AttendanceStatus,
+  AttendanceRecord,
   AcademicYear,
   User,
 } from '../types/index.ts';
@@ -45,6 +46,7 @@ interface AttendanceViewProps {
   classes: SchoolClass[];
   subjects: Subject[];
   academicYears: AcademicYear[];
+  attendanceRecords?: AttendanceRecord[];
   currentUser: User;
   onOpenTelegramModal: () => void;
 }
@@ -54,10 +56,12 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   classes,
   subjects,
   academicYears,
+  attendanceRecords,
   currentUser,
   onOpenTelegramModal,
 }) => {
   const todayStr = getTodayLocalStr();
+  const liveAllRecords = attendanceRecords || storage.getAttendanceRecords();
 
   // Filters - Default to real current date (ថ្ងៃបច្ចុប្បន្ន)
   const [selectedYearId, setSelectedYearId] = useState<string>(
@@ -153,25 +157,44 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
 
   // Get all attendance records for the selected class & selected month (YYYY-MM)
   const currentYearMonthPrefix = `${activeYearStr}-${activeMonthStr}`;
-  const classMonthRecords = storage
-    .getAttendanceRecords({ classId: selectedClassId })
-    .filter((r) => r.date.startsWith(currentYearMonthPrefix));
+  const classMonthRecords = liveAllRecords.filter(
+    (r) => r.classId === selectedClassId && r.date.startsWith(currentYearMonthPrefix)
+  );
 
-  // Load existing records or default to "present"
+  // Signature of records for the selected class & date so useEffect reacts immediately to Cloud Sync
+  const dayRecordsSignature = liveAllRecords
+    .filter((r) => r.classId === selectedClassId && r.date === selectedDate)
+    .map((r) => `${r.id}:${r.status}:${r.reason || ''}`)
+    .join('|');
+
+  // Load existing records (from any User account via Cloud Sync or local DB) or default to "present"
   useEffect(() => {
     const existingSession = storage.getAttendanceSession(selectedClassId, selectedDate, selectedPeriod);
-    setIsExistingSession(!!existingSession);
-
-    const existingRecords = storage.getAttendanceRecords({
+    let existingRecords = storage.getAttendanceRecords({
       classId: selectedClassId,
       date: selectedDate,
       sessionId: existingSession?.id,
     });
 
+    // If no records exist for the specific period session yet, fallback to any records saved for that class & date
+    if (existingRecords.length === 0) {
+      existingRecords = storage.getAttendanceRecords({
+        classId: selectedClassId,
+        date: selectedDate,
+      });
+    }
+
+    setIsExistingSession(Boolean(existingSession || existingRecords.length > 0));
+
     const newState: Record<string, { status: AttendanceStatus; reason: string }> = {};
 
     classStudents.forEach((student) => {
-      const match = existingRecords.find((r) => r.studentId === student.id);
+      const match = existingRecords.find(
+        (r) =>
+          r.studentId === student.id ||
+          r.studentId === student.studentId ||
+          (r.studentName && r.studentName.trim() === student.khmerName.trim())
+      );
       if (match) {
         newState[student.id] = {
           status: match.status,
@@ -187,9 +210,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     });
 
     setAttendanceState(newState);
-    setIsSavedRecently(false);
-    setAlertInfo({ show: false, message: '', unexcusedSent: 0 });
-  }, [selectedClassId, selectedDate, selectedPeriod, students.length]);
+  }, [selectedClassId, selectedDate, selectedPeriod, students.length, dayRecordsSignature, currentUser.id]);
 
   // Set single student status
   const handleSetStatus = (studentId: string, status: AttendanceStatus) => {

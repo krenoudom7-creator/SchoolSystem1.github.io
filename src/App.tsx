@@ -222,6 +222,7 @@ export default function App() {
               classes={dbState.classes}
               subjects={dbState.subjects}
               academicYears={dbState.academicYears}
+              attendanceRecords={dbState.attendanceRecords}
               currentUser={currentUser}
               onOpenTelegramModal={() => setCurrentTab('telegram')}
             />

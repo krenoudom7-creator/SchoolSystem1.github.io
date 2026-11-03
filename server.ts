@@ -320,6 +320,93 @@ async function startServer() {
   });
 
   // -------------------------------------------------------------
+  // Central Multi-User State Synchronization API (/api/sync/state)
+  // Ensures all Users across all accounts/browsers/tabs see identical attendance & school data
+  // -------------------------------------------------------------
+  let sharedServerState: Record<string, any> | null = null;
+
+  app.get('/api/sync/state', async (req, res) => {
+    try {
+      // Also pull latest attendanceRecords from Firestore if sharedServerState is not yet populated
+      if (!sharedServerState) {
+        try {
+          const [attSnap, stuSnap, clsSnap] = await Promise.all([
+            getDocs(collection(db, 'attendanceRecords')),
+            getDocs(collection(db, 'students')),
+            getDocs(collection(db, 'classes')),
+          ]);
+          const attList: any[] = [];
+          attSnap.forEach((d) => attList.push(d.data()));
+          const stuList: any[] = [];
+          stuSnap.forEach((d) => stuList.push(d.data()));
+          const clsList: any[] = [];
+          clsSnap.forEach((d) => clsList.push(d.data()));
+
+          if (attList.length > 0 || stuList.length > 0 || clsList.length > 0) {
+            sharedServerState = {
+              attendanceRecords: attList,
+              students: stuList.length > 0 ? stuList : undefined,
+              classes: clsList.length > 0 ? clsList : undefined,
+              updatedAt: Date.now(),
+            };
+          }
+        } catch {
+          // Ignore cloud preload error
+        }
+      }
+
+      res.json({
+        success: true,
+        state: sharedServerState,
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post('/api/sync/state', async (req, res) => {
+    try {
+      const incoming = req.body || {};
+      if (!sharedServerState) {
+        sharedServerState = { ...incoming, updatedAt: Date.now() };
+      } else {
+        // Merge attendanceRecords by id (preferring newer createdAt)
+        const mergedAttMap = new Map<string, any>();
+        for (const r of sharedServerState.attendanceRecords || []) {
+          if (r && r.id) mergedAttMap.set(r.id, r);
+        }
+        for (const r of incoming.attendanceRecords || []) {
+          if (r && r.id) mergedAttMap.set(r.id, r);
+        }
+
+        // Merge attendanceSessions by id
+        const mergedSessMap = new Map<string, any>();
+        for (const s of sharedServerState.attendanceSessions || []) {
+          if (s && s.id) mergedSessMap.set(s.id, s);
+        }
+        for (const s of incoming.attendanceSessions || []) {
+          if (s && s.id) mergedSessMap.set(s.id, s);
+        }
+
+        sharedServerState = {
+          ...sharedServerState,
+          ...incoming,
+          attendanceRecords: Array.from(mergedAttMap.values()),
+          attendanceSessions: Array.from(mergedSessMap.values()),
+          updatedAt: Date.now(),
+        };
+      }
+
+      res.json({
+        success: true,
+        updatedAt: sharedServerState?.updatedAt || Date.now(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // -------------------------------------------------------------
   // School General Info & Telegram Proxy
   // -------------------------------------------------------------
   app.get('/api/school/info', (req, res) => {

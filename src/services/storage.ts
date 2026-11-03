@@ -25,8 +25,10 @@ import {
   syncClassToCloud,
   removeClassFromCloud,
   syncAttendanceRecordToCloud,
+  removeAttendanceRecordFromCloud,
   syncExamResultToCloud,
   syncUserToCloud,
+  toSafeFirestoreId,
 } from './firebaseSync.ts';
 
 const DB_KEY = 'toulsambour_school_db_v4';
@@ -471,48 +473,251 @@ class StorageService {
         }
       }
     });
+
+    // 4. Reconcile attendanceRecords with canonical student IDs & class IDs, and reconstruct missing attendanceSessions
+    if (this.db.attendanceRecords && this.db.attendanceRecords.length > 0) {
+      if (!this.db.attendanceSessions) {
+        this.db.attendanceSessions = [];
+      }
+      const existingSessionIds = new Set(this.db.attendanceSessions.map((s) => s.id));
+
+      this.db.attendanceRecords.forEach((rec) => {
+        // Match student by id, studentId, or khmerName so cross-account records always link to the student
+        const matchedStudent = this.db.students.find(
+          (s) =>
+            s.id === rec.studentId ||
+            s.studentId === rec.studentId ||
+            (rec.studentName && s.khmerName.trim() === rec.studentName.trim())
+        );
+        if (matchedStudent) {
+          if (rec.studentId !== matchedStudent.id || rec.classId !== matchedStudent.classId) {
+            rec.studentId = matchedStudent.id;
+            rec.classId = matchedStudent.classId;
+            rec.studentName = matchedStudent.khmerName;
+            if (syncRepairsToCloud) {
+              syncAttendanceRecordToCloud(rec).catch(() => {});
+            }
+          }
+        }
+
+        // Reconstruct session if this record came from another User/device via Cloud Sync
+        if (rec.sessionId && !existingSessionIds.has(rec.sessionId)) {
+          existingSessionIds.add(rec.sessionId);
+          this.db.attendanceSessions.push({
+            id: rec.sessionId,
+            classId: rec.classId,
+            date: rec.date,
+            period: this.inferPeriodFromSessionId(rec.sessionId),
+            subjectId: rec.subjectId || 'sbj-math',
+            recordedBy: rec.recordedBy || 'admin',
+            createdAt: rec.createdAt || new Date().toISOString(),
+          });
+        }
+      });
+    }
+  }
+
+  private getPeriodSlug(period: string): string {
+    const p = (period || '').trim();
+    if (p.includes('ព្រឹក') && p.includes('១')) return 'am1';
+    if (p.includes('ព្រឹក') && p.includes('២')) return 'am2';
+    if (p.includes('ព្រឹក') && p.includes('៣')) return 'am3';
+    if (p.includes('ព្រឹក') && p.includes('៤')) return 'am4';
+    if (p.includes('រសៀល') && p.includes('១')) return 'pm1';
+    if (p.includes('រសៀល') && p.includes('២')) return 'pm2';
+    if (p.includes('ពេញមួយថ្ងៃ') || p.toLowerCase().includes('full')) return 'fullday';
+    return 'am1';
+  }
+
+  private inferPeriodFromSessionId(sessionId: string): string {
+    if (sessionId.endsWith('-am1')) return 'ព្រឹក ម៉ោងទី ១ (០៧:០០ - ០៧:៥០)';
+    if (sessionId.endsWith('-am2')) return 'ព្រឹក ម៉ោងទី ២ (០៧:៥៥ - ០៨:៤៥)';
+    if (sessionId.endsWith('-am3')) return 'ព្រឹក ម៉ោងទី ៣ (០៩:០០ - ០៩:៥០)';
+    if (sessionId.endsWith('-am4')) return 'ព្រឹក ម៉ោងទី ៤ (០៩:៥៥ - ១០:៤៥)';
+    if (sessionId.endsWith('-pm1')) return 'រសៀល ម៉ោងទី ១ (១៣:៣០ - ១៤:២០)';
+    if (sessionId.endsWith('-pm2')) return 'រសៀល ម៉ោងទី ២ (១៤:២៥ - ១៥:១៥)';
+    if (sessionId.endsWith('-fullday')) return 'វត្តមានពេញមួយថ្ងៃ (Full Day)';
+    return 'ព្រឹក ម៉ោងទី ១ (០៧:០០ - ០៧:៥០)';
+  }
+
+  private pushSharedStateToServer(): void {
+    if (typeof window === 'undefined' || !('fetch' in window)) return;
+    window
+      .fetch('/api/sync/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attendanceRecords: this.db.attendanceRecords,
+          attendanceSessions: this.db.attendanceSessions,
+          students: this.db.students,
+          classes: this.db.classes,
+          teachers: this.db.teachers,
+          examResults: this.db.examResults,
+          users: this.db.users,
+        }),
+      })
+      .catch(() => {});
+  }
+
+  private pullSharedStateFromServer(): void {
+    if (typeof window === 'undefined' || !('fetch' in window)) return;
+    window
+      .fetch('/api/sync/state')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data || !data.state) return;
+        const st = data.state;
+        let changed = false;
+
+        if (Array.isArray(st.attendanceRecords) && st.attendanceRecords.length > 0) {
+          const map = new Map<string, AttendanceRecord>();
+          this.db.attendanceRecords.forEach((r) => map.set(r.id, r));
+          let addedOrUpdated = false;
+          st.attendanceRecords.forEach((r: AttendanceRecord) => {
+            const existing = map.get(r.id);
+            if (!existing || existing.status !== r.status || existing.reason !== r.reason) {
+              map.set(r.id, r);
+              addedOrUpdated = true;
+            }
+          });
+          if (addedOrUpdated) {
+            this.db.attendanceRecords = Array.from(map.values());
+            changed = true;
+          }
+        }
+
+        if (Array.isArray(st.attendanceSessions) && st.attendanceSessions.length > 0) {
+          const sessMap = new Map<string, AttendanceSession>();
+          this.db.attendanceSessions.forEach((s) => sessMap.set(s.id, s));
+          st.attendanceSessions.forEach((s: AttendanceSession) => {
+            if (!sessMap.has(s.id)) {
+              sessMap.set(s.id, s);
+              changed = true;
+            }
+          });
+          this.db.attendanceSessions = Array.from(sessMap.values());
+        }
+
+        if (changed) {
+          this.saveLocalOnly(this.db);
+        }
+      })
+      .catch(() => {});
   }
 
   private initCloudSync(): void {
     if (typeof window === 'undefined') return;
+
+    // 1. Push any already-entered local attendance records & students to Firestore and Central Server on boot
+    setTimeout(() => {
+      this.db.attendanceRecords?.forEach((rec) => {
+        syncAttendanceRecordToCloud(rec).catch(() => {});
+      });
+      this.db.students?.forEach((stu) => {
+        syncStudentToCloud(stu).catch(() => {});
+      });
+      this.db.classes?.forEach((cls) => {
+        syncClassToCloud(cls).catch(() => {});
+      });
+      this.pushSharedStateToServer();
+      this.pullSharedStateFromServer();
+    }, 300);
+
+    // 2. Listen to cross-tab localStorage updates and periodic central server sync
+    window.addEventListener('storage', (event) => {
+      if (event.key === DB_KEY && event.newValue) {
+        try {
+          const parsed = JSON.parse(event.newValue);
+          if (parsed && parsed.attendanceRecords) {
+            this.db = parsed;
+            this.reconcileClassesAndStudents(false);
+            this.notifyListeners();
+          }
+        } catch {
+          // ignore
+        }
+      }
+    });
+
+    setInterval(() => {
+      this.pullSharedStateFromServer();
+    }, 4000);
+
+    // 3. Real-time Firestore listeners with non-destructive merge
     try {
       startFirestoreSync({
         onStudentsChange: (remote) => {
-          if (remote && Array.isArray(remote)) {
-            this.db.students = remote;
+          if (remote && Array.isArray(remote) && remote.length > 0) {
+            const map = new Map<string, Student>();
+            this.db.students.forEach((s) => map.set(s.id, s));
+            remote.forEach((s) => map.set(s.id, s));
+            this.db.students = Array.from(map.values());
             this.reconcileClassesAndStudents(false);
             this.saveLocalOnly(this.db);
           }
         },
         onTeachersChange: (remote) => {
-          if (remote && Array.isArray(remote)) {
-            this.db.teachers = remote;
+          if (remote && Array.isArray(remote) && remote.length > 0) {
+            const map = new Map<string, Teacher>();
+            this.db.teachers.forEach((t) => map.set(t.id, t));
+            remote.forEach((t) => map.set(t.id, t));
+            this.db.teachers = Array.from(map.values());
             this.saveLocalOnly(this.db);
           }
         },
         onClassesChange: (remote) => {
-          if (remote && Array.isArray(remote)) {
-            this.db.classes = remote;
+          if (remote && Array.isArray(remote) && remote.length > 0) {
+            const map = new Map<string, SchoolClass>();
+            this.db.classes.forEach((c) => map.set(c.id, c));
+            remote.forEach((c) => map.set(c.id, c));
+            this.db.classes = Array.from(map.values());
             this.reconcileClassesAndStudents(true);
             this.saveLocalOnly(this.db);
           }
         },
         onAttendanceChange: (remote) => {
           if (remote && Array.isArray(remote)) {
-            this.db.attendanceRecords = remote;
+            const remoteIds = new Set(remote.map((r) => r.id));
+            // Push any local attendance records that aren't in Firestore yet
+            this.db.attendanceRecords.forEach((localRec) => {
+              const safeId = toSafeFirestoreId(localRec.id, 'att');
+              if (!remoteIds.has(localRec.id) && !remoteIds.has(safeId)) {
+                syncAttendanceRecordToCloud(localRec).catch(() => {});
+              }
+            });
+
+            // Merge remote + local attendance records (remote wins on matching ID/student+date+session)
+            const mergedMap = new Map<string, AttendanceRecord>();
+            this.db.attendanceRecords.forEach((r) => {
+              const key = `${r.classId}_${r.date}_${r.sessionId}_${r.studentId}`;
+              mergedMap.set(key, r);
+            });
+            remote.forEach((r) => {
+              const key = `${r.classId}_${r.date}_${r.sessionId}_${r.studentId}`;
+              mergedMap.set(key, r);
+            });
+
+            this.db.attendanceRecords = Array.from(mergedMap.values());
+            this.reconcileClassesAndStudents(false);
             this.saveLocalOnly(this.db);
           }
         },
         onExamResultsChange: (remote) => {
-          if (remote && Array.isArray(remote)) {
-            this.db.examResults = remote;
+          if (remote && Array.isArray(remote) && remote.length > 0) {
+            const map = new Map<string, ExamResult>();
+            this.db.examResults.forEach((r) => map.set(r.id, r));
+            remote.forEach((r) => map.set(r.id, r));
+            this.db.examResults = Array.from(map.values());
             this.saveLocalOnly(this.db);
           }
         },
         onUsersChange: (remote) => {
           if (remote && remote.length > 0) {
             const admin = this.db.users.find((u) => u.username === 'admin');
-            const merged = [...remote];
+            const map = new Map<string, User>();
+            this.db.users.forEach((u) => map.set(u.id, u));
+            remote.forEach((u) => map.set(u.id, u));
+            const merged = Array.from(map.values());
             if (admin && !merged.some((u) => u.username === 'admin')) {
               merged.unshift(admin);
             }
@@ -611,6 +816,7 @@ class StorageService {
       if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.setItem(DB_KEY, JSON.stringify(this.db));
       }
+      this.pushSharedStateToServer();
       this.notifyListeners();
     } catch (e) {
       console.error('Failed to save to localStorage', e);
@@ -1082,13 +1288,18 @@ class StorageService {
   }
 
   public getAttendanceSession(classId: string, date: string, period: string): AttendanceSession | undefined {
+    const periodSlug = this.getPeriodSlug(period);
+    const deterministicId = toSafeFirestoreId(`sess-${classId}-${date}-${periodSlug}`, 'sess');
     return this.db.attendanceSessions.find(
-      (s) => s.classId === classId && s.date === date && s.period === period
+      (s) =>
+        s.id === deterministicId ||
+        (s.classId === classId && s.date === date && s.period === period)
     );
   }
 
   /**
-   * Save a complete attendance session for a class, preventing duplicates
+   * Save a complete attendance session for a class, preventing duplicates,
+   * syncing every record to Firestore + Central Server for all Users,
    * and automatically queuing Telegram notifications for unexcused absences!
    */
   public saveAttendanceSession(
@@ -1105,35 +1316,46 @@ class StorageService {
     recordedBy: string,
     recordedByName: string
   ): { sessionId: string; unexcusedAlertsSent: number } {
+    const periodSlug = this.getPeriodSlug(period);
+    const deterministicSessionId = toSafeFirestoreId(`sess-${classId}-${date}-${periodSlug}`, 'sess');
+
     // 1. Find or create session
     let session = this.getAttendanceSession(classId, date, period);
     const isNew = !session;
 
     if (!session) {
       session = {
-        id: `sess-${Date.now()}`,
+        id: deterministicSessionId,
         classId,
         date,
         period,
-        subjectId,
+        subjectId: subjectId || 'sbj-math',
         recordedBy,
         createdAt: new Date().toISOString(),
       };
       this.db.attendanceSessions.push(session);
     }
 
-    // 2. Clear old records for this session to prevent duplicates
+    // 2. Clear old records for this session (or same class+date+student in this session) to prevent duplicates
+    const oldRecordsToRemove = this.db.attendanceRecords.filter(
+      (r) => r.sessionId === session!.id || r.sessionId === deterministicSessionId
+    );
     this.db.attendanceRecords = this.db.attendanceRecords.filter(
-      (r) => r.sessionId !== session!.id
+      (r) => r.sessionId !== session!.id && r.sessionId !== deterministicSessionId
     );
 
     let unexcusedCount = 0;
     const targetClass = this.db.classes.find((c) => c.id === classId);
     const className = targetClass ? targetClass.name : 'ថ្នាក់រៀន';
+    const newRecordIds = new Set<string>();
 
-    // 3. Save records
+    // 3. Save records and immediately sync to Cloud Database for all Users
     for (const item of records) {
-      const recId = `att-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      const recId = toSafeFirestoreId(
+        `att-${classId}-${date}-${periodSlug}-${item.studentId}`,
+        'att'
+      );
+      newRecordIds.add(recId);
       const rec: AttendanceRecord = {
         id: recId,
         sessionId: session.id,
@@ -1142,13 +1364,18 @@ class StorageService {
         classId,
         date,
         status: item.status,
-        reason: item.reason,
-        subjectId,
+        reason: item.reason || '',
+        subjectId: subjectId || 'sbj-math',
         recordedBy,
         recordedByName,
         createdAt: new Date().toISOString(),
       };
       this.db.attendanceRecords.push(rec);
+
+      // Sync to Firestore Cloud so ALL Users see this attendance immediately
+      syncAttendanceRecordToCloud(rec).catch((e) =>
+        console.warn('Cloud sync attendance error:', e)
+      );
 
       // 4. If absent without permission, trigger notification alert to parent!
       if (item.status === 'absent_no_permission') {
@@ -1172,6 +1399,13 @@ class StorageService {
         }
       }
     }
+
+    // Remove any obsolete record IDs from Firestore if they had old random IDs
+    oldRecordsToRemove.forEach((oldRec) => {
+      if (!newRecordIds.has(oldRec.id)) {
+        removeAttendanceRecordFromCloud(oldRec.id).catch(() => {});
+      }
+    });
 
     const actionText = isNew ? 'កត់ត្រាវត្តមានថ្មី' : 'កែប្រែទិន្នន័យវត្តមាន';
     this.logAudit(
@@ -1230,8 +1464,9 @@ class StorageService {
     );
 
     for (const item of results) {
+      const resId = toSafeFirestoreId(`res-${examId}-${classId}-${item.studentId}`, 'res');
       const examRes: ExamResult = {
-        id: `res-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        id: resId,
         examId,
         studentId: item.studentId,
         studentName: item.studentName,
@@ -1244,6 +1479,7 @@ class StorageService {
         remarks: item.remarks,
       };
       this.db.examResults.push(examRes);
+      syncExamResultToCloud(examRes).catch((e) => console.warn('Cloud sync examResult error:', e));
     }
 
     const exam = this.db.exams.find((e) => e.id === examId);
@@ -1548,6 +1784,7 @@ class StorageService {
     this.db.users.push(newUser);
     this.logAudit(actorName, 'admin', 'បន្ថែមអ្នកប្រើប្រាស់/Admin', `បន្ថែមគណនី ${newUser.name} (${newUser.username})`);
     this.saveDatabase(this.db);
+    syncUserToCloud(newUser).catch((e) => console.warn('Cloud sync user error:', e));
     return newUser;
   }
 
@@ -1563,6 +1800,7 @@ class StorageService {
     this.db.users[index] = { ...this.db.users[index], ...updates, password: this.getSystemAccessCode() };
     this.logAudit(actorName, 'admin', 'កែប្រែគណនីអ្នកប្រើប្រាស់', `កែប្រែគណនី ${this.db.users[index].name}`);
     this.saveDatabase(this.db);
+    syncUserToCloud(this.db.users[index]).catch((e) => console.warn('Cloud sync user error:', e));
     return true;
   }
 
