@@ -51,9 +51,14 @@ export interface SchoolCertificateStandard {
   academicYear: string;
   blessingLine: string;
   locationAndDate: string;
+  directorApprovalLine: string;
   directorTitle: string;
   directorName: string;
   showDirectorName: boolean;
+  homeroomTeacherTitle: string;
+  homeroomTeacherName: string;
+  showHomeroomTeacherName: boolean;
+  swapSignatureSides: boolean;
   showPhotoBox: boolean;
   showStudentPhotoInBox: boolean;
   useSchoolLogoAtTopCenter: boolean;
@@ -61,7 +66,7 @@ export interface SchoolCertificateStandard {
   customLogoUrl: string;
 }
 
-const STORAGE_KEY = 'toulsambour_certificate_standard_v6';
+const STORAGE_KEY = 'toulsambour_certificate_standard_v7';
 
 const DEFAULT_STANDARD: SchoolCertificateStandard = {
   frameColorStyle: 'original_red_gold',
@@ -74,9 +79,14 @@ const DEFAULT_STANDARD: SchoolCertificateStandard = {
   academicYear: '២០២៥-២០២៦',
   blessingLine: 'សូមជូននូវពុទ្ធពរទាំងបួនប្រការគឺ អាយុ វណ្ណៈ សុខៈ ពលៈ ជានិច្ចនិរន្តរ៍។',
   locationAndDate: 'ទួលសំបួរ ថ្ងៃទី០៣ ខែវិច្ឆិកា ឆ្នាំ២០២៦',
+  directorApprovalLine: 'បានឃើញ និងឯកភាព',
   directorTitle: 'នាយកសាលា',
   directorName: 'លាង បេន',
   showDirectorName: false,
+  homeroomTeacherTitle: 'គ្រូបន្ទុកថ្នាក់',
+  homeroomTeacherName: '',
+  showHomeroomTeacherName: false,
+  swapSignatureSides: false,
   showPhotoBox: true,
   showStudentPhotoInBox: false,
   useSchoolLogoAtTopCenter: false,
@@ -335,6 +345,7 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
               max-width: none !important;
             }
             .certificate-print-page {
+              zoom: 1 !important;
               width: 297mm !important;
               height: 210mm !important;
               padding: 0mm !important;
@@ -357,25 +368,34 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
 
       <div
         id="official-print-modal-card"
-        className="bg-slate-100 rounded-3xl max-w-7xl w-full shadow-2xl border border-slate-200 overflow-hidden my-2 sm:my-4"
+        className="bg-slate-100 rounded-2xl sm:rounded-3xl max-w-7xl w-full shadow-xl border border-slate-200 overflow-hidden my-1 sm:my-4"
       >
         {/* Top Control Bar (Hidden on Print) */}
-        <div className="bg-white border-b border-slate-200 p-4 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 no-print print:hidden">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-red-600 to-amber-600 text-white flex items-center justify-center shadow-sm shrink-0">
-              <Award className="w-6 h-6" />
+        <div className="bg-white border-b border-slate-200 p-3 sm:p-4 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-4 no-print print:hidden">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-red-600 to-amber-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                <Award className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div>
+                <h2 className="text-xs sm:text-lg font-bold font-moul text-slate-900">
+                  ប័ណ្ណសរសើរផ្លូវការតាមគម្រូដើម ១០០% (Official Honor Certificate)
+                </h2>
+                <p className="text-[11px] sm:text-xs text-slate-500">
+                  បង្កប់ស៊ុមប័ណ្ណសរសើរដូចបេះបិតទៅនឹងគម្រូដើម មិនបាត់ស៊ុមពេលដាក់លើ GitHub និងព្រីនពេញក្រដាស A4 ផ្តេក
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold font-moul text-slate-900">
-                ប័ណ្ណសរសើរផ្លូវការតាមគម្រូដើម ១០០% (Official Honor Certificate)
-              </h2>
-              <p className="text-xs text-slate-500">
-                បង្កប់ស៊ុមប័ណ្ណសរសើរដូចបេះបិតទៅនឹងគម្រូដើម មិនបាត់ស៊ុមពេលដាក់លើ GitHub និងព្រីនពេញក្រដាស A4 ផ្តេក
-              </p>
-            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="lg:hidden p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {/* Quick Toggle for 4x6 Photo Box */}
             <button
               type="button"
@@ -620,23 +640,32 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  តួនាទី និងឈ្មោះនាយកសាលា
+                  ហត្ថលេខាទី១៖ នាយកសាលា (ពាក្យនាំមុខ, តួនាទី & ឈ្មោះ)
                 </label>
-                <div className="flex items-center gap-1.5">
+                <div className="space-y-1.5">
                   <input
                     type="text"
-                    value={standard.directorTitle}
-                    onChange={(e) => updateStandard({ directorTitle: e.target.value })}
-                    className="w-28 bg-white border border-slate-300 rounded-xl px-2.5 py-2 font-bold text-slate-900"
-                    placeholder="នាយកសាលា"
+                    value={standard.directorApprovalLine}
+                    onChange={(e) => updateStandard({ directorApprovalLine: e.target.value })}
+                    className="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 font-medium text-slate-900"
+                    placeholder="បានឃើញ និងឯកភាព"
                   />
-                  <input
-                    type="text"
-                    value={standard.directorName}
-                    onChange={(e) => updateStandard({ directorName: e.target.value })}
-                    className="flex-1 bg-white border border-slate-300 rounded-xl px-2.5 py-2 font-bold text-slate-900"
-                    placeholder="ឈ្មោះនាយក"
-                  />
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={standard.directorTitle}
+                      onChange={(e) => updateStandard({ directorTitle: e.target.value })}
+                      className="w-28 bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 font-bold text-slate-900"
+                      placeholder="នាយកសាលា"
+                    />
+                    <input
+                      type="text"
+                      value={standard.directorName}
+                      onChange={(e) => updateStandard({ directorName: e.target.value })}
+                      className="flex-1 bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 font-bold text-slate-900"
+                      placeholder="ឈ្មោះនាយក"
+                    />
+                  </div>
                 </div>
                 <div className="flex items-center gap-3 mt-1.5">
                   <label className="flex items-center gap-1 cursor-pointer text-[11px] font-semibold text-slate-700">
@@ -648,13 +677,54 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
                     <UserCheck className="w-3.5 h-3.5 text-blue-800" />
                     <span>បង្ហាញឈ្មោះនាយក</span>
                   </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-blue-950 mb-1">
+                  ហត្ថលេខាទី២៖ គ្រូបន្ទុកថ្នាក់ (តួនាទី & ឈ្មោះគ្រូបន្ទុកថ្នាក់)
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={standard.homeroomTeacherTitle}
+                    onChange={(e) => updateStandard({ homeroomTeacherTitle: e.target.value })}
+                    className="w-28 bg-white border border-blue-300 rounded-xl px-2.5 py-2 font-bold text-blue-950"
+                    placeholder="គ្រូបន្ទុកថ្នាក់"
+                  />
+                  <input
+                    type="text"
+                    value={standard.homeroomTeacherName}
+                    onChange={(e) => updateStandard({ homeroomTeacherName: e.target.value })}
+                    className="flex-1 bg-white border border-blue-300 rounded-xl px-2.5 py-2 font-bold text-blue-950"
+                    placeholder={currentClass?.homeroomTeacherName || 'ឈ្មោះគ្រូបន្ទុកថ្នាក់'}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                  <label className="flex items-center gap-1 cursor-pointer text-[11px] font-semibold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={standard.showHomeroomTeacherName}
+                      onChange={(e) => updateStandard({ showHomeroomTeacherName: e.target.checked })}
+                    />
+                    <UserCheck className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>បង្ហាញឈ្មោះគ្រូបន្ទុកថ្នាក់</span>
+                  </label>
+                  <label className="flex items-center gap-1 cursor-pointer text-[11px] font-semibold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={standard.swapSignatureSides}
+                      onChange={(e) => updateStandard({ swapSignatureSides: e.target.checked })}
+                    />
+                    <span>ប្ដូរឆ្វេង ⇄ ស្ដាំ (គ្រូបន្ទុកថ្នាក់ ⇄ នាយក)</span>
+                  </label>
                   <label className="flex items-center gap-1 cursor-pointer text-[11px] font-semibold text-slate-700">
                     <input
                       type="checkbox"
                       checked={standard.showCenterWatermark}
                       onChange={(e) => updateStandard({ showCenterWatermark: e.target.checked })}
                     />
-                    <span>ដាក់ឡូហ្គោសាលាព្រាលៗនៅកណ្តាល</span>
+                    <span>ឡូហ្គោសាលាព្រាលៗនៅកណ្តាល</span>
                   </label>
                 </div>
               </div>
@@ -663,16 +733,16 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
         )}
 
         {/* Filter & Student Selection Bar (Hidden on Print) */}
-        <div className="bg-slate-50 border-b border-slate-200 p-4 sm:px-6 space-y-3 no-print print:hidden">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2.5">
+        <div className="bg-slate-50 border-b border-slate-200 p-2.5 sm:p-4 sm:px-6 space-y-2.5 sm:space-y-3 no-print print:hidden">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Class Selector */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <span className="text-xs font-bold text-slate-600">ថ្នាក់៖</span>
                 <select
                   value={selectedClassId}
                   onChange={(e) => setSelectedClassId(e.target.value)}
-                  className="text-xs bg-white border border-slate-300 rounded-xl px-3 py-1.5 font-bold text-slate-900"
+                  className="text-xs bg-white border border-slate-300 rounded-xl px-2.5 py-1 sm:px-3 sm:py-1.5 font-bold text-slate-900"
                 >
                   {classes.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -683,12 +753,12 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
               </div>
 
               {/* Exam Selector */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <span className="text-xs font-bold text-slate-600">សម័យប្រឡង៖</span>
                 <select
                   value={selectedExamId}
                   onChange={(e) => setSelectedExamId(e.target.value)}
-                  className="text-xs bg-white border border-slate-300 rounded-xl px-3 py-1.5 font-bold text-slate-900"
+                  className="text-xs bg-white border border-slate-300 rounded-xl px-2.5 py-1 sm:px-3 sm:py-1.5 font-bold text-slate-900"
                 >
                   {exams.map((ex) => (
                     <option key={ex.id} value={ex.id}>
@@ -699,32 +769,32 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
               </div>
 
               {/* Quick Rank Filter Buttons */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => selectTopN(1)}
-                  className="px-2.5 py-1.5 text-[11px] font-bold bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-lg border border-amber-300 cursor-pointer transition-colors"
+                  className="px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] font-bold bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-lg border border-amber-300 cursor-pointer transition-colors"
                 >
                   🥇 លេខ ១
                 </button>
                 <button
                   type="button"
                   onClick={() => selectTopN(3)}
-                  className="px-2.5 py-1.5 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-200 cursor-pointer transition-colors"
+                  className="px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-200 cursor-pointer transition-colors"
                 >
                   🏆 លេខ ១ ដល់ ៣
                 </button>
                 <button
                   type="button"
                   onClick={() => selectTopN(5)}
-                  className="px-2.5 py-1.5 text-[11px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-lg border border-blue-200 cursor-pointer transition-colors"
+                  className="px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-lg border border-blue-200 cursor-pointer transition-colors"
                 >
                   🎖️ លេខ ១ ដល់ ៥
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedStudentIds(rankedList.map((r) => r.studentId))}
-                  className="px-2.5 py-1.5 text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 cursor-pointer transition-colors"
+                  className="px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 cursor-pointer transition-colors"
                 >
                   ជ្រើសរើសទាំងអស់ ({rankedList.length})
                 </button>
@@ -739,13 +809,13 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="ស្វែងរកឈ្មោះសិស្ស ឬចំណាត់ថ្នាក់..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-900"
+                className="w-full pl-8 pr-3 py-1 sm:py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-900"
               />
             </div>
           </div>
 
-          {/* Student Selector Buttons */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+          {/* Student Selector Buttons (Wrapped & scrollable so all students are easily clickable on both PC & Android) */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 max-h-28 overflow-y-auto p-1 bg-white/60 rounded-xl border border-slate-200/70">
             {filteredList.map((item) => {
               const isSelected = selectedStudentIds.includes(item.studentId);
               return (
@@ -753,7 +823,7 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
                   key={item.studentId}
                   type="button"
                   onClick={() => toggleStudent(item.studentId)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0 border transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 sm:gap-2 shrink-0 border transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-blue-950 text-white border-blue-950 shadow-xs'
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
@@ -775,7 +845,7 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
         {/* Printable Certificates Container */}
         <div
           id="official-print-sheet"
-          className="p-4 sm:p-8 space-y-8 overflow-x-auto print:p-0 print:space-y-0"
+          className="p-2 sm:p-8 space-y-4 sm:space-y-8 overflow-x-auto print:p-0 print:space-y-0"
         >
           {selectedCertificates.length === 0 ? (
             <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 no-print">
@@ -785,198 +855,263 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
               </p>
             </div>
           ) : (
-            selectedCertificates.map((cert) => (
-              <div
-                key={cert.studentId}
-                className="certificate-print-page mx-auto bg-white shadow-xl print:shadow-none relative overflow-hidden w-[1120px] h-[792px] select-none"
-              >
-                {/* 1. EXACT SELF-CONTAINED BASE64 CERTIFICATE FRAME FROM USER'S UPLOADED SAMPLE */}
-                <img
-                  src={CERTIFICATE_FRAME_URL}
-                  alt="Official Certificate Frame"
-                  className="absolute inset-0 w-full h-full object-fill pointer-events-none"
-                  style={{ filter: getFrameFilter() }}
-                />
+            selectedCertificates.map((cert) => {
+              const effectiveHomeroomTeacherName =
+                standard.homeroomTeacherName.trim() ||
+                currentClass?.homeroomTeacherName ||
+                '';
 
-                {/* Optional: If user chooses to replace top-center emblem with School Logo */}
-                {standard.useSchoolLogoAtTopCenter && (
-                  <div
-                    className="absolute flex items-center justify-center bg-white rounded-full"
-                    style={{
-                      top: '20px',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      width: '132px',
-                      height: '138px',
-                    }}
-                  >
-                    <div className="w-[116px] h-[116px] rounded-full p-1 bg-white border-2 border-amber-500 shadow-xs flex items-center justify-center overflow-hidden">
-                      <img
-                        src={activeSchoolLogo}
-                        alt={standard.schoolName}
-                        className="w-full h-full object-contain rounded-full"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. INNER CERTIFICATE CONTENT AREA (Strictly inside the inner red line of image_ef1b4f2f.png: top 18.2%, bottom 13.8%, left 10.5%, right 10.8%) */}
+              return (
                 <div
-                  className="absolute overflow-hidden"
-                  style={{
-                    top: '18.2%',
-                    bottom: '13.8%',
-                    left: '10.6%',
-                    right: '10.8%',
-                  }}
+                  key={cert.studentId}
+                  className="certificate-print-page mx-auto bg-white shadow-xl print:shadow-none relative overflow-hidden w-[1120px] h-[792px]"
                 >
-                  {/* 3. CENTER FADED SCHOOL LOGO WATERMARK */}
-                  {standard.showCenterWatermark && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <img
-                        src={activeSchoolLogo}
-                        alt="School Watermark"
-                        className="w-[270px] h-[270px] object-contain rounded-full opacity-[0.13]"
-                      />
+                  {/* 1. EXACT SELF-CONTAINED BASE64 3D GOLD KBACH CERTIFICATE FRAME (from image_9dd5030d.png) */}
+                  <img
+                    src={CERTIFICATE_FRAME_URL}
+                    alt="Official Certificate Frame"
+                    className="absolute inset-0 w-full h-full object-fill pointer-events-none"
+                    style={{ filter: getFrameFilter() }}
+                  />
+
+                  {/* Optional: If user chooses to place School Logo in the top-center arch between the gold Kbach wings */}
+                  {standard.useSchoolLogoAtTopCenter && (
+                    <div
+                      className="absolute flex items-center justify-center rounded-full"
+                      style={{
+                        top: '22px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: '108px',
+                        height: '108px',
+                      }}
+                    >
+                      <div className="w-[100px] h-[100px] rounded-full p-1 bg-white border-2 border-amber-500 shadow-xs flex items-center justify-center overflow-hidden">
+                        <img
+                          src={activeSchoolLogo}
+                          alt={standard.schoolName}
+                          className="w-full h-full object-contain rounded-full"
+                        />
+                      </div>
                     </div>
                   )}
 
-                  {/* 4. EXACT LAYOUT & TYPOGRAPHY MATCHING THE UPLOADED SAMPLE (image_ef1b4f2f.png) */}
-                  <div className="relative z-10 w-full h-full flex flex-col justify-between px-4 py-1 text-slate-950 box-border">
-                    {/* TOP ROW: Left (Office, District, School, Number) & Right (Kingdom of Cambodia Motto) */}
-                    <div className="flex items-start justify-between w-full">
-                      {/* Left Column (pushed slightly down just like the sample) */}
-                      <div className="text-left space-y-2 pt-7">
-                        <div className="font-moul text-[14.5px] text-black leading-[1.65]">
-                          {standard.officeOrDepartmentName}
+                  {/* 2. INNER CERTIFICATE CONTENT AREA (Strictly inside the dark-blue inner rectangle of image_9dd5030d.png: top 20.6%, bottom 13.0%, left 11.2%, right 11.2%) */}
+                  <div
+                    className="absolute overflow-hidden"
+                    style={{
+                      top: '20.6%',
+                      bottom: '13.0%',
+                      left: '11.2%',
+                      right: '11.2%',
+                    }}
+                  >
+                    {/* 3. CENTER FADED SCHOOL LOGO WATERMARK */}
+                    {standard.showCenterWatermark && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <img
+                          src={activeSchoolLogo}
+                          alt="School Watermark"
+                          className="w-[260px] h-[260px] object-contain rounded-full opacity-[0.12]"
+                        />
+                      </div>
+                    )}
+
+                    {/* 4. EXACT LAYOUT & TYPOGRAPHY INSIDE THE 3D ROYAL GOLD KBACH FRAME */}
+                    <div className="relative z-10 w-full h-full flex flex-col justify-between px-5 py-2 text-slate-950 box-border">
+                      {/* TOP ROW: Left (Office, District, School, Number — without the small left logo #1) & Right (Kingdom of Cambodia Motto) */}
+                      <div className="flex items-start justify-between w-full">
+                        {/* Left Column */}
+                        <div className="text-left space-y-1.5 pt-1">
+                          <div className="font-moul text-[13.5px] text-[#1e3a8a] leading-[1.65]">
+                            {standard.officeOrDepartmentName}
+                          </div>
+                          <div className="font-moul text-[13.5px] text-[#1e3a8a] leading-[1.65]">
+                            {standard.districtOrProvince}
+                          </div>
+                          <div className="font-moul text-[13.5px] text-[#1e3a8a] leading-[1.65]">
+                            {standard.schoolName}
+                          </div>
+                          <div className="text-[13.5px] text-black leading-[1.6]">
+                            <span>លេខ: </span>
+                            <span className="tracking-widest text-slate-700">
+                              {standard.certificateNumber}
+                            </span>
+                          </div>
                         </div>
-                        <div className="font-moul text-[14.5px] text-black leading-[1.65]">
-                          {standard.districtOrProvince}
+
+                        {/* Right Column: Kingdom of Cambodia Motto (Top-Right inside the blue line, matching image_9dd5030d.png) */}
+                        <div className="text-center pr-2 pt-0.5 space-y-1">
+                          <div className="font-moul text-[15.5px] text-[#1e3a8a] tracking-wide leading-[1.65]">
+                            ព្រះរាជាណាចក្រកម្ពុជា
+                          </div>
+                          <div className="font-moul text-[15.5px] text-[#1e3a8a] tracking-wide leading-[1.65]">
+                            ជាតិ សាសនា ព្រះមហាក្សត្រ
+                          </div>
+                          <div className="text-xs font-bold text-[#1e3a8a] tracking-widest">
+                            ❖ ❖ ❖
+                          </div>
                         </div>
-                        <div className="font-moul text-[14.5px] text-black leading-[1.65]">
-                          {standard.schoolName}
+                      </div>
+
+                      {/* CENTER HEADINGS: "ប័ណ្ណសរសើរ", "នាយកសាលា...", "សូមគោរពសរសើរចំពោះ" */}
+                      <div className="text-center -mt-3 space-y-0.5">
+                        <div className="inline-block">
+                          <h1 className="font-moul text-[27px] text-[#d91b1b] leading-[1.45] tracking-wide">
+                            ប័ណ្ណសរសើរ
+                          </h1>
+                          <div className="text-[10px] text-[#d91b1b] tracking-[0.25em] -mt-1.5 font-bold">
+                            ...........................................
+                          </div>
                         </div>
-                        <div className="text-[14.5px] text-black leading-[1.65]">
-                          <span>លេខ: </span>
-                          <span className="tracking-widest text-slate-700">
-                            {standard.certificateNumber}
+
+                        <div className="font-moul text-[15.5px] text-[#1d63b8] leading-[1.65]">
+                          {standard.presenterTitle}
+                        </div>
+
+                        <div className="text-[15px] font-semibold text-[#1d63b8] leading-[1.55]">
+                          {standard.complimentLine}
+                        </div>
+                      </div>
+
+                      {/* BODY CITATION PARAGRAPH */}
+                      <div className="text-center px-2 text-[15.5px] text-black leading-[2.0] font-medium">
+                        <div>
+                          <span>សិស្សឈ្មោះ </span>
+                          <span className="font-moul text-[17px] text-[#0038a8] mx-1.5">
+                            {cert.khmerName}
                           </span>
+                          <span> ភេទ </span>
+                          <strong className="font-bold text-black mx-1">{cert.gender}</strong>
+                          <span> រៀននៅ </span>
+                          <strong className="font-bold text-black mx-1">
+                            {formattedClassName}
+                          </strong>
+                          <span> នៃ</span>
+                          <strong className="font-moul text-[14.5px] text-black mx-1">
+                            {standard.schoolName}
+                          </strong>
+                          <span> ដែល</span>
                         </div>
-                      </div>
 
-                      {/* Right Column: Kingdom of Cambodia Motto (Top-Right under the red line, matching sample) */}
-                      <div className="text-center pr-2 pt-1 space-y-1.5">
-                        <div className="font-moul text-[16px] text-black tracking-wide leading-[1.65]">
-                          ព្រះរាជាណាចក្រកម្ពុជា
+                        <div>
+                          <span>បានយកចិត្តទុកដាក់ ខិតខំសិក្សារៀនសូត្រ ទទួលបានចំណាត់ថ្នាក់លេខ </span>
+                          <span
+                            className="font-moul text-[18px] mx-1.5"
+                            style={{
+                              color: '#d91b1b',
+                            }}
+                          >
+                            {toKhmerNum(cert.rank)}
+                          </span>
+                          <span> ប្រចាំឆ្នាំសិក្សា {standard.academicYear} ។</span>
                         </div>
-                        <div className="font-moul text-[16px] text-black tracking-wide leading-[1.65]">
-                          ជាតិ សាសនា ព្រះមហាក្សត្រ
-                        </div>
-                        <div className="text-xs font-bold text-black tracking-widest pt-0.5">
-                          ❖ ❖ ❖
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* CENTER HEADINGS: Red "ប័ណ្ណសរសើរ", Blue "នាយកសាលា...", Blue "សូមគោរពសរសើរចំពោះ" */}
-                    <div className="text-center -mt-4 space-y-1">
-                      <div className="inline-block">
-                        <h1 className="font-moul text-[28px] text-[#d91b1b] leading-[1.5] tracking-wide">
-                          ប័ណ្ណសរសើរ
-                        </h1>
-                        <div className="text-[10px] text-[#d91b1b] tracking-[0.25em] -mt-1.5 font-bold">
-                          ...........................................
-                        </div>
+                        <div>{standard.blessingLine}</div>
                       </div>
 
-                      <div className="font-moul text-[16px] text-[#1d63b8] leading-[1.7]">
-                        {standard.presenterTitle}
-                      </div>
-
-                      <div className="text-[15.5px] font-semibold text-[#1d63b8] leading-[1.6]">
-                        {standard.complimentLine}
-                      </div>
-                    </div>
-
-                    {/* BODY CITATION PARAGRAPH (3 Lines matching sample word-for-word) */}
-                    <div className="text-center px-2 text-[15.5px] text-black leading-[2.1] font-medium -mt-1">
-                      <div>
-                        <span>សិស្សឈ្មោះ </span>
-                        <span className="font-moul text-[17px] text-[#0038a8] mx-1.5">
-                          {cert.khmerName}
-                        </span>
-                        <span> ភេទ </span>
-                        <strong className="font-bold text-black mx-1">{cert.gender}</strong>
-                        <span> រៀននៅ </span>
-                        <strong className="font-bold text-black mx-1">
-                          {formattedClassName}
-                        </strong>
-                        <span> នៃ</span>
-                        <strong className="font-moul text-[14.5px] text-black mx-1">
-                          {standard.schoolName}
-                        </strong>
-                        <span> ដែល</span>
-                      </div>
-
-                      <div>
-                        <span>បានយកចិត្តទុកដាក់ ខិតខំសិក្សារៀនសូត្រ ទទួលបានចំណាត់ថ្នាក់លេខ </span>
-                        <span
-                          className="font-moul text-[18px] mx-1.5"
-                          style={{
-                            color: '#d91b1b',
-                          }}
-                        >
-                          {toKhmerNum(cert.rank)}
-                        </span>
-                        <span> ប្រចាំឆ្នាំសិក្សា {standard.academicYear} ។</span>
-                      </div>
-
-                      <div>{standard.blessingLine}</div>
-                    </div>
-
-                    {/* BOTTOM SECTION: Optional 4x6 Photo Box & Bottom-Right Date + Director */}
-                    <div className="relative w-full h-[112px] flex items-start justify-center">
-                      {standard.showPhotoBox && (
-                        <div className="w-[82px] h-[108px] border border-black flex flex-col items-center justify-center text-center bg-white/80 overflow-hidden">
-                          {standard.showStudentPhotoInBox ? (
-                            <img
-                              src={cert.photo}
-                              alt={cert.khmerName}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = DEFAULT_STUDENT_AVATAR;
-                              }}
-                            />
-                          ) : (
-                            <div className="space-y-2 text-[12.5px] text-black font-medium">
-                              <div>រូបថតថ្មី</div>
-                              <div>ទំហំ ៤×៦</div>
+                      {/* BOTTOM SECTION: Dual Signatures (School Director & Homeroom Teacher) + Optional 4x6 Photo Box in Center */}
+                      <div className="w-full h-[116px] flex items-start justify-between px-4 pt-1">
+                        {/* LEFT SIGNATURE BLOCK */}
+                        {!standard.swapSignatureSides ? (
+                          <div className="text-center min-w-[230px]">
+                            <div className="text-[14.5px] text-black font-medium leading-[1.6]">
+                              {standard.directorApprovalLine}
                             </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Bottom Right: Location/Date & Director Title */}
-                      <div className="absolute right-6 top-0 text-center min-w-[260px]">
-                        <div className="text-[15px] text-black font-medium leading-[1.65]">
-                          {standard.locationAndDate}
-                        </div>
-                        <div className="font-moul text-[15px] text-black mt-1.5 leading-[1.65]">
-                          {standard.directorTitle}
-                        </div>
-                        {standard.showDirectorName ? (
-                          <div className="font-moul text-[14px] text-black mt-10 leading-[1.6]">
-                            {standard.directorName}
+                            <div className="font-moul text-[15px] text-[#1e3a8a] mt-1 leading-[1.6]">
+                              {standard.directorTitle}
+                            </div>
+                            {standard.showDirectorName && standard.directorName ? (
+                              <div className="font-moul text-[14px] text-[#1e3a8a] mt-9 leading-[1.5]">
+                                {standard.directorName}
+                              </div>
+                            ) : (
+                              <div className="h-11" />
+                            )}
                           </div>
                         ) : (
-                          <div className="h-12" />
+                          <div className="text-center min-w-[230px]">
+                            <div className="text-[14.5px] text-transparent select-none leading-[1.6]">
+                              .
+                            </div>
+                            <div className="font-moul text-[15px] text-[#1e3a8a] mt-1 leading-[1.6]">
+                              {standard.homeroomTeacherTitle}
+                            </div>
+                            {standard.showHomeroomTeacherName && effectiveHomeroomTeacherName ? (
+                              <div className="font-moul text-[14px] text-[#1e3a8a] mt-9 leading-[1.5]">
+                                {effectiveHomeroomTeacherName}
+                              </div>
+                            ) : (
+                              <div className="h-11" />
+                            )}
+                          </div>
+                        )}
+
+                        {/* CENTER 4x6 PHOTO BOX */}
+                        <div className="flex items-center justify-center">
+                          {standard.showPhotoBox ? (
+                            <div className="w-[78px] h-[104px] border border-black flex flex-col items-center justify-center text-center bg-white/90 overflow-hidden shadow-2xs">
+                              {standard.showStudentPhotoInBox ? (
+                                <img
+                                  src={cert.photo}
+                                  alt={cert.khmerName}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = DEFAULT_STUDENT_AVATAR;
+                                  }}
+                                />
+                              ) : (
+                                <div className="space-y-1.5 text-[12px] text-black font-medium">
+                                  <div>រូបថតថ្មី</div>
+                                  <div>ទំហំ ៤×៦</div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="w-[78px]" />
+                          )}
+                        </div>
+
+                        {/* RIGHT SIGNATURE BLOCK */}
+                        {!standard.swapSignatureSides ? (
+                          <div className="text-center min-w-[250px]">
+                            <div className="text-[14.5px] text-black font-medium leading-[1.6]">
+                              {standard.locationAndDate}
+                            </div>
+                            <div className="font-moul text-[15px] text-[#1e3a8a] mt-1 leading-[1.6]">
+                              {standard.homeroomTeacherTitle}
+                            </div>
+                            {standard.showHomeroomTeacherName && effectiveHomeroomTeacherName ? (
+                              <div className="font-moul text-[14px] text-[#1e3a8a] mt-9 leading-[1.5]">
+                                {effectiveHomeroomTeacherName}
+                              </div>
+                            ) : (
+                              <div className="h-11" />
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center min-w-[250px]">
+                            <div className="text-[14.5px] text-black font-medium leading-[1.6]">
+                              {standard.locationAndDate}
+                            </div>
+                            <div className="font-moul text-[15px] text-[#1e3a8a] mt-1 leading-[1.6]">
+                              {standard.directorTitle}
+                            </div>
+                            {standard.showDirectorName && standard.directorName ? (
+                              <div className="font-moul text-[14px] text-[#1e3a8a] mt-9 leading-[1.5]">
+                                {standard.directorName}
+                              </div>
+                            ) : (
+                              <div className="h-11" />
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

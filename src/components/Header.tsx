@@ -92,11 +92,11 @@ export const Header: React.FC<HeaderProps> = ({
       <KhmerCornerOrnament position="top-left" size={32} variant="gold" className="opacity-70 hidden sm:block" />
       <KhmerCornerOrnament position="top-right" size={32} variant="gold" className="opacity-70 hidden sm:block" />
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between min-h-[68px] sm:min-h-[78px] py-2 gap-2 sm:gap-3">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between min-h-[48px] sm:min-h-[74px] py-1 sm:py-2 gap-1.5 sm:gap-3">
           {/* Brand & Subtitle */}
-          <div className="flex items-center space-x-2.5 sm:space-x-3.5 min-w-0 flex-1">
-            <div className="w-10 h-10 sm:w-13 sm:h-13 aspect-square shrink-0 rounded-full p-0.5 bg-white border-2 border-amber-400 ring-2 ring-amber-200/70 shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+          <div className="flex items-center space-x-2 sm:space-x-3.5 min-w-0 flex-1">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 aspect-square shrink-0 rounded-full p-0.5 bg-white border border-amber-400 sm:border-2 ring-1 sm:ring-2 ring-amber-200/70 shadow-xs sm:shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               <img
                 src={SCHOOL_LOGO_URL}
                 alt="Logo អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ"
@@ -104,8 +104,8 @@ export const Header: React.FC<HeaderProps> = ({
               />
             </div>
             <div className="min-w-0 py-0.5 flex-1">
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <h1 className="font-moul text-xs sm:text-base text-blue-950 tracking-wide font-bold leading-[1.9] py-0.5 truncate max-w-full">
+              <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                <h1 className="font-moul text-[11px] sm:text-base text-blue-950 tracking-wide font-bold leading-[1.6] sm:leading-[1.9] truncate max-w-full">
                   អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ
                 </h1>
                 <span className="hidden sm:inline-block px-2.5 py-0.5 text-[11px] font-semibold bg-amber-100/90 text-amber-900 border border-amber-300 rounded-md leading-relaxed">
@@ -118,16 +118,16 @@ export const Header: React.FC<HeaderProps> = ({
                   <span>Cloud Database Live</span>
                 </span>
               </div>
-              <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-relaxed mt-0.5 flex items-center gap-1.5 flex-wrap">
+              <p className="hidden sm:flex text-[11px] text-slate-600 font-medium leading-relaxed mt-0.5 items-center gap-1.5 flex-wrap">
                 <span className="text-amber-700 font-semibold">ព្រះរាជាណាចក្រកម្ពុជា · ជាតិ សាសនា ព្រះមហាក្សត្រ</span>
-                <span className="hidden sm:inline text-slate-300">|</span>
-                <span className="hidden sm:inline">ឃុំទួលសំបួរ ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម</span>
+                <span className="text-slate-300">|</span>
+                <span>ឃុំទួលសំបួរ ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម</span>
               </p>
             </div>
           </div>
 
           {/* Right Actions: Date, Notification Bell, User Switcher */}
-          <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
+          <div className="flex items-center space-x-1 sm:space-x-3 shrink-0">
             {/* Date Display */}
             <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100/80 px-3 py-1.5 rounded-lg border border-slate-200/60">
               <Calendar className="w-3.5 h-3.5 text-blue-800" />
@@ -154,29 +154,29 @@ export const Header: React.FC<HeaderProps> = ({
                   setShowRoleMenu(false);
                 }}
                 aria-label="ការជូនដំណឹង"
-                className={`relative p-2 rounded-xl transition-all cursor-pointer ${
+                className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer ${
                   unreadAlerts.length > 0
-                    ? 'text-amber-900 bg-amber-50 ring-2 ring-amber-400/50 shadow-md animate-pulse'
+                    ? 'text-amber-900 bg-amber-50 ring-2 ring-amber-400/50 shadow-xs'
                     : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100'
                 }`}
               >
                 <Bell
-                  className={`w-5 h-5 ${
+                  className={`w-4 h-4 sm:w-5 sm:h-5 ${
                     unreadAlerts.length > 0 ? 'text-amber-600 animate-bell-ring' : ''
                   }`}
                 />
                 {unreadAlerts.length > 0 ? (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-600 text-[10px] font-bold text-white shadow-xs border-2 border-white animate-bounce">
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full bg-rose-600 text-[9px] sm:text-[10px] font-bold text-white shadow-xs border border-white">
                     {unreadAlerts.length}
                   </span>
                 ) : (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+                  <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 ring-1 ring-white"></span>
                 )}
               </button>
 
               {/* Notification Dropdown */}
               {showNotifMenu && (
-                <div className="fixed sm:absolute right-2 sm:right-0 top-[72px] sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] max-w-sm sm:w-96 max-h-[80dvh] overflow-y-auto overscroll-contain touch-pan-y bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
+                <div className="fixed sm:absolute right-2 sm:right-0 top-[54px] sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] max-w-sm sm:w-96 max-h-[80dvh] overflow-y-auto overscroll-contain touch-pan-y bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50">
                   <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 rounded-t-xl">
                     <div className="flex items-center gap-2 font-bold text-xs text-slate-900">
                       <div className="p-1.5 rounded-lg bg-amber-100 text-amber-700">
@@ -299,7 +299,7 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* Single Unified System Information Dropdown */}
               {showRoleMenu && (
-                <div className="fixed sm:absolute right-2 sm:right-0 top-[72px] sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] max-w-xs sm:w-72 max-h-[80dvh] overflow-y-auto overscroll-contain touch-pan-y bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 animate-in fade-in">
+                <div className="fixed sm:absolute right-2 sm:right-0 top-[54px] sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] max-w-xs sm:w-72 max-h-[80dvh] overflow-y-auto overscroll-contain touch-pan-y bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50">
                   <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 mb-3">
                     <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-base flex-shrink-0 border border-amber-200">
                       🏫
@@ -402,7 +402,9 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
-      <KhmerBorderStrip position="bottom" />
+      <div className="hidden sm:block">
+        <KhmerBorderStrip position="bottom" />
+      </div>
     </header>
   );
 };

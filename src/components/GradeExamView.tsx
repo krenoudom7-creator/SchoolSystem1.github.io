@@ -515,8 +515,8 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
               </select>
             </div>
 
-            {/* Quick Switch Subject Pills */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-1.5 mb-1.5 scrollbar-thin">
+            {/* Quick Switch Subject Pills (Wrapped cleanly so all subjects are visible without horizontal sticking) */}
+            <div className="flex flex-wrap items-center gap-1 pb-1.5 mb-1.5">
               {examSubjects.map((sbj) => {
                 const isCur = selectedSubjectForMax === sbj.id;
                 const sMax = getSubjectMax(sbj.id);
@@ -832,9 +832,9 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-100/90 text-[11px] font-semibold text-slate-700 border-b border-slate-200">
-                  <th className="py-2.5 px-3 text-center w-12 sticky left-0 bg-slate-100 z-10">ល.រ</th>
-                  <th className="py-2.5 px-3 w-24 sticky left-12 bg-slate-100 z-10">អត្តលេខ</th>
-                  <th className="py-2.5 px-3 min-w-[140px] sticky left-36 bg-slate-100 z-10">ឈ្មោះសិស្ស</th>
+                  <th className="py-2.5 px-3 text-center w-12 md:sticky md:left-0 bg-slate-100 z-10">ល.រ</th>
+                  <th className="py-2.5 px-3 w-24 bg-slate-100">អត្តលេខ</th>
+                  <th className="py-2.5 px-3 min-w-[140px] md:sticky md:left-12 bg-slate-100 z-10">ឈ្មោះសិស្ស</th>
                   
                   {/* Dynamic Subject Column Headers with Delete / Remove button & Clickable Per-Subject Max */}
                   {examSubjects.map((sbj) => {
@@ -896,13 +896,13 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
 
                   return (
                     <tr key={student.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-2.5 px-3 text-center text-slate-400 font-mono sticky left-0 bg-white">
+                      <td className="py-2.5 px-3 text-center text-slate-400 font-mono md:sticky md:left-0 bg-white">
                         {idx + 1}
                       </td>
-                      <td className="py-2.5 px-3 font-mono font-medium text-slate-700 sticky left-12 bg-white">
+                      <td className="py-2.5 px-3 font-mono font-medium text-slate-700 bg-white">
                         {student.studentId}
                       </td>
-                      <td className="py-2.5 px-3 font-bold text-slate-900 sticky left-36 bg-white">
+                      <td className="py-2.5 px-3 font-bold text-slate-900 md:sticky md:left-12 bg-white">
                         {student.khmerName}
                       </td>
 
@@ -1186,8 +1186,8 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
 
       {/* Modal: Full Batch Subject Max Score Matrix */}
       {isSubjectMaxModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 overflow-y-auto backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col my-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3 flex-shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center font-bold">

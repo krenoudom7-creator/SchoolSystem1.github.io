@@ -109,33 +109,155 @@ p.font-moul {
   }
 
   /* ==========================================================================
-     ANDROID & MOBILE TOUCH SCROLLING OPTIMIZATION
-     សម្រួលការអូសលើ-ក្រោម និងឆ្វេង-ស្ដាំ លើទូរស័ព្ទ Android ឱ្យរលូនមិនទាក់
+     PC & ANDROID UNIVERSAL SMOOTH SCROLLING (VERTICAL & HORIZONTAL)
+     ធានាថាការអូសលើ-ក្រោម និងឆ្វេង-ស្ដាំ (ទៅមុខ-ថយក្រោយ) ដើររលូនទាំងលើកុំព្យូទ័រ និង Android
      ========================================================================== */
-  html,
-  body {
-    overflow-x: hidden;
+  html {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: auto;
-    touch-action: pan-x pan-y manipulation;
+    touch-action: auto !important;
   }
 
-  /* Ensure wide tables and horizontal scroll containers allow both horizontal & vertical touch panning on Android */
+  body {
+    overflow-x: clip;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: auto;
+    touch-action: auto !important;
+  }
+
+  /* Prevent any touch-pan-y utility from blocking horizontal swiping (pan-x) */
+  .touch-pan-y,
+  .touch-pan-x {
+    touch-action: pan-x pan-y pinch-zoom !important;
+  }
+
+  /* Ensure wide tables and horizontal scroll containers allow both horizontal & vertical panning on Android & PC */
   .overflow-x-auto,
   .overflow-y-auto,
   .overflow-auto {
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y pinch-zoom !important;
   }
 
   .overflow-x-auto {
+    overflow-x: auto !important;
     overscroll-behavior-x: contain;
     scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #f1f5f9;
+  }
+
+  /* Clear, easy-to-grab scrollbars for PC Mouse & Android visual feedback */
+  .overflow-x-auto::-webkit-scrollbar,
+  .overflow-y-auto::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-track,
+  .overflow-y-auto::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 9999px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb,
+  .overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 9999px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover,
+  .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+
+  .is-dragging-scroll {
+    cursor: grabbing !important;
+    user-select: none !important;
   }
 
   /* Safe area padding for Android gesture navigation bar */
   .safe-area-bottom {
-    padding-bottom: max(0.375rem, env(safe-area-inset-bottom));
+    padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Mobile & Android Specific Compact Scaling & Anti-Lag Rules (<= 768px) */
+@media screen and (max-width: 768px) {
+  html {
+    /* Scale down all rem-based typography, paddings, buttons, cards, and modals proportionally */
+    font-size: 13px !important;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Tighter line-height on small mobile screens while still protecting Khmer vowels */
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.65 !important;
+    padding-top: 0.04em;
+    padding-bottom: 0.04em;
+  }
+
+  p, li, label, td, th, button, input, select, textarea {
+    line-height: 1.6 !important;
+  }
+
+  /* Compact table cells so more columns fit on Android screen */
+  table th,
+  table td {
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+    padding-left: 0.4rem !important;
+    padding-right: 0.4rem !important;
+  }
+
+  /* Disable GPU-heavy backdrop-filter blur & infinite background animations on Android to eliminate scroll stutter */
+  *,
+  *::before,
+  *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .animate-rgb-flow,
+  .rgb-glow-border,
+  .rgb-glow-pill,
+  .rgb-text-shimmer,
+  .animate-bell-ring,
+  .animate-pulse,
+  .animate-bounce,
+  .animate-ping {
+    animation: none !important;
+  }
+
+  .khmer-pattern-overlay {
+    background-image: none !important;
+  }
+
+  .khmer-kbach-card,
+  .khmer-kbach-header {
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06) !important;
+  }
+
+  .shadow-2xl,
+  .shadow-xl,
+  .shadow-lg {
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  /* Auto-scale the 1120x792 Honor Certificate preview to fit cleanly inside tablet/large phone screens */
+  .certificate-print-page {
+    zoom: 0.46;
+  }
+}
+
+/* Extra-Compact Scaling for Standard Android Phones (<= 480px) */
+@media screen and (max-width: 480px) {
+  html {
+    font-size: 12px !important;
+  }
+
+  /* Fit the 1120px wide certificate cleanly inside a 360px-412px Android phone screen without horizontal scroll */
+  .certificate-print-page {
+    zoom: 0.31;
   }
 }
 
