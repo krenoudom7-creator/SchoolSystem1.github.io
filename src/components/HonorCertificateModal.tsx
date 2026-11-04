@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Student, SchoolClass, Exam, ExamResult } from '../types/index.ts';
 import { SCHOOL_LOGO_URL } from '../utils/schoolLogo.ts';
+import { CERTIFICATE_FRAME_URL } from '../utils/certificateFrame.ts';
 import { safeAvatar, DEFAULT_STUDENT_AVATAR } from '../utils/avatar.ts';
 
 const toKhmerNum = (num: number | string): string => {
@@ -28,7 +29,6 @@ const toKhmerNum = (num: number | string): string => {
 
 /**
  * Formats class name like "ថ្នាក់ទី ៧ ក" -> 'ថ្នាក់ទី ៧ “ក”'
- * to match the official Cambodian school certificate style.
  */
 const formatClassForCertificate = (rawName?: string): string => {
   if (!rawName) return 'ថ្នាក់ទី ៧ “ក”';
@@ -41,38 +41,46 @@ const formatClassForCertificate = (rawName?: string): string => {
 };
 
 export interface SchoolCertificateStandard {
-  frameColorStyle: 'classic_blue' | 'royal_gold' | 'crimson_red' | 'emerald_green';
-  departmentName: string;
-  provinceOrDistrict: string;
+  frameColorStyle: 'original_red_gold' | 'royal_gold' | 'classic_blue' | 'emerald_green';
+  officeOrDepartmentName: string;
+  districtOrProvince: string;
   schoolName: string;
   presenterTitle: string;
+  complimentLine: string;
   certificateNumber: string;
   academicYear: string;
-  achievementText: string;
+  blessingLine: string;
   locationAndDate: string;
   directorTitle: string;
   directorName: string;
   showDirectorName: boolean;
+  showPhotoBox: boolean;
   showStudentPhotoInBox: boolean;
+  useSchoolLogoAtTopCenter: boolean;
+  showCenterWatermark: boolean;
   customLogoUrl: string;
 }
 
-const STORAGE_KEY = 'toulsambour_certificate_standard_v3';
+const STORAGE_KEY = 'toulsambour_certificate_standard_v6';
 
 const DEFAULT_STANDARD: SchoolCertificateStandard = {
-  frameColorStyle: 'classic_blue',
-  departmentName: 'មន្ទីរអប់រំ យុវជន និងកីឡា',
-  provinceOrDistrict: 'ខេត្តកំពង់ចាម',
+  frameColorStyle: 'original_red_gold',
+  officeOrDepartmentName: 'ការិយាល័យអប់រំ យុវជន និងកីឡា',
+  districtOrProvince: 'ស្រុកស្ទឹងត្រង់ ខេត្តកំពង់ចាម',
   schoolName: 'អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ',
-  presenterTitle: 'នាយក អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ',
-  certificateNumber: '..........................',
-  academicYear: '២០២៥ - ២០២៦',
-  achievementText: 'ដែលបានទទួលលទ្ធផលល្អ ក្នុងការសិក្សា ហើយត្រូវបានជាប់ចំណាត់ថ្នាក់លេខ',
+  presenterTitle: 'នាយកអនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ',
+  complimentLine: 'សូមគោរពសរសើរចំពោះ',
+  certificateNumber: '.................................',
+  academicYear: '២០២៥-២០២៦',
+  blessingLine: 'សូមជូននូវពុទ្ធពរទាំងបួនប្រការគឺ អាយុ វណ្ណៈ សុខៈ ពលៈ ជានិច្ចនិរន្តរ៍។',
   locationAndDate: 'ទួលសំបួរ ថ្ងៃទី០៣ ខែវិច្ឆិកា ឆ្នាំ២០២៦',
-  directorTitle: 'នាយក',
+  directorTitle: 'នាយកសាលា',
   directorName: 'លាង បេន',
   showDirectorName: false,
+  showPhotoBox: true,
   showStudentPhotoInBox: false,
+  useSchoolLogoAtTopCenter: false,
+  showCenterWatermark: true,
   customLogoUrl: '',
 };
 
@@ -291,23 +299,21 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
   if (!isOpen) return null;
 
   const activeSchoolLogo = standard.customLogoUrl || SCHOOL_LOGO_URL;
+  const formattedClassName = formatClassForCertificate(currentClass?.name);
 
-  // CSS filter for the traditional Khmer floral border image if user wants alternate school colors
   const getFrameFilter = () => {
     switch (standard.frameColorStyle) {
       case 'royal_gold':
-        return 'hue-rotate(175deg) saturate(1.6) brightness(0.95)';
-      case 'crimson_red':
-        return 'hue-rotate(130deg) saturate(1.4)';
-      case 'emerald_green':
-        return 'hue-rotate(270deg) saturate(1.2)';
+        return 'hue-rotate(28deg) saturate(1.5) brightness(1.02)';
       case 'classic_blue':
+        return 'hue-rotate(215deg) saturate(1.4)';
+      case 'emerald_green':
+        return 'hue-rotate(115deg) saturate(1.2)';
+      case 'original_red_gold':
       default:
         return 'none';
     }
   };
-
-  const formattedClassName = formatClassForCertificate(currentClass?.name);
 
   return createPortal(
     <div
@@ -356,15 +362,15 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
         {/* Top Control Bar (Hidden on Print) */}
         <div className="bg-white border-b border-slate-200 p-4 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 no-print print:hidden">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-800 to-blue-950 text-amber-300 flex items-center justify-center shadow-sm shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-red-600 to-amber-600 text-white flex items-center justify-center shadow-sm shrink-0">
               <Award className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold font-moul text-slate-900">
-                ប័ណ្ណសរសើរផ្លូវការតាមគម្រូស្តង់ដារសាលា (Official Honor Certificate)
+                ប័ណ្ណសរសើរផ្លូវការតាមគម្រូដើម ១០០% (Official Honor Certificate)
               </h2>
               <p className="text-xs text-slate-500">
-                ប្រើប្រាស់ឡូហ្គោសាលាផ្លូវការ និងតម្រឹមប្រអប់រូបថត ៤×៦ ព្រមទាំងកន្លែងហត្ថលេខាឱ្យសមាមាត្រក្នុងស៊ុមក្បាច់ភ្ញីទេស
+                បង្កប់ស៊ុមប័ណ្ណសរសើរដូចបេះបិតទៅនឹងគម្រូដើម មិនបាត់ស៊ុមពេលដាក់លើ GitHub និងព្រីនពេញក្រដាស A4 ផ្តេក
               </p>
             </div>
           </div>
@@ -373,22 +379,34 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
             {/* Quick Toggle for 4x6 Photo Box */}
             <button
               type="button"
-              onClick={() =>
-                updateStandard({ showStudentPhotoInBox: !standard.showStudentPhotoInBox })
-              }
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-colors cursor-pointer ${
-                standard.showStudentPhotoInBox
-                  ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
-                  : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+              onClick={() => updateStandard({ showPhotoBox: !standard.showPhotoBox })}
+              className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                standard.showPhotoBox
+                  ? 'bg-blue-50 text-blue-900 border-blue-300'
+                  : 'bg-slate-100 text-slate-600 border-slate-300'
               }`}
             >
               <ImageIcon className="w-4 h-4" />
-              <span>
-                {standard.showStudentPhotoInBox
-                  ? 'កំពុងបង្ហាញរូបថតសិស្សក្នុងប្រអប់ ៤×៦'
-                  : 'ប្រអប់ ៤×៦ ទទេ (សម្រាប់បិទរូបថតផ្ទាល់)'}
-              </span>
+              <span>{standard.showPhotoBox ? 'បង្ហាញប្រអប់រូបថត ៤×៦' : 'មិនដាក់ប្រអប់រូបថត'}</span>
             </button>
+
+            {standard.showPhotoBox && (
+              <button
+                type="button"
+                onClick={() =>
+                  updateStandard({ showStudentPhotoInBox: !standard.showStudentPhotoInBox })
+                }
+                className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                  standard.showStudentPhotoInBox
+                    ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                    : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                <span>
+                  {standard.showStudentPhotoInBox ? 'រូបថតសិស្សក្នុងប្រអប់' : 'ប្រអប់ ៤×៦ ទទេ'}
+                </span>
+              </button>
+            )}
 
             {/* Customize School Standard Toggle */}
             <button
@@ -448,21 +466,29 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
                 />
                 <button
                   type="button"
+                  onClick={() =>
+                    updateStandard({
+                      useSchoolLogoAtTopCenter: !standard.useSchoolLogoAtTopCenter,
+                    })
+                  }
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border cursor-pointer ${
+                    standard.useSchoolLogoAtTopCenter
+                      ? 'bg-blue-900 text-white border-blue-900'
+                      : 'bg-white text-slate-700 border-slate-300'
+                  }`}
+                >
+                  {standard.useSchoolLogoAtTopCenter
+                    ? 'កំពុងប្រើឡូហ្គោសាលានៅកំពូលកណ្តាល'
+                    : 'កំពុងប្រើសញ្ញាណគម្រូដើមនៅកំពូលកណ្តាល'}
+                </button>
+                <button
+                  type="button"
                   onClick={() => logoInputRef.current?.click()}
                   className="px-3 py-1.5 bg-white hover:bg-amber-100 text-slate-800 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 >
                   <Upload className="w-3.5 h-3.5 text-blue-900" />
-                  <span>ប្តូរឡូហ្គោសាលាថ្មី (សម្រាប់សាលាផ្សេង)</span>
+                  <span>ប្តូរឡូហ្គោសាលាថ្មី</span>
                 </button>
-                {standard.customLogoUrl && (
-                  <button
-                    type="button"
-                    onClick={() => updateStandard({ customLogoUrl: '' })}
-                    className="px-2.5 py-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold cursor-pointer"
-                  >
-                    ប្រើឡូហ្គោសាលាដើមវិញ
-                  </button>
-                )}
                 <button
                   type="button"
                   onClick={handleResetStandard}
@@ -477,10 +503,10 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
             {/* Frame Color Options */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {[
-                { id: 'classic_blue', label: '១. ក្បាច់ភ្ញីទេសពណ៌ខៀវ (គម្រូដើម)' },
-                { id: 'royal_gold', label: '២. ក្បាច់ភ្ញីទេសពណ៌មាស' },
-                { id: 'crimson_red', label: '៣. ក្បាច់ភ្ញីទេសពណ៌ក្រហម' },
-                { id: 'emerald_green', label: '៤. ក្បាច់ភ្ញីទេសពណ៌បៃតង' },
+                { id: 'original_red_gold', label: '១. ពណ៌គម្រូដើមបេះបិត (ក្រហម-មាស)' },
+                { id: 'royal_gold', label: '២. ពណ៌មាសឆ្អិនឆ្អៅ (Royal Gold)' },
+                { id: 'classic_blue', label: '៣. ពណ៌ខៀវផ្លូវការ (Royal Blue)' },
+                { id: 'emerald_green', label: '៤. ពណ៌បៃតងមរកត (Emerald)' },
               ].map((styleItem) => (
                 <button
                   key={styleItem.id}
@@ -492,7 +518,7 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
                   }
                   className={`p-2 rounded-xl border text-xs font-bold text-left cursor-pointer transition-all ${
                     standard.frameColorStyle === styleItem.id
-                      ? 'bg-white border-blue-800 ring-2 ring-blue-500/30 text-blue-950'
+                      ? 'bg-white border-red-600 ring-2 ring-red-500/30 text-red-950'
                       : 'bg-white/60 border-slate-200 text-slate-700 hover:bg-white'
                   }`}
                 >
@@ -505,24 +531,24 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  មន្ទីរអប់រំ (ជួរទី១ ខាងឆ្វេង)
+                  ការិយាល័យ / មន្ទីរអប់រំ (ជួរទី១ ខាងឆ្វេង)
                 </label>
                 <input
                   type="text"
-                  value={standard.departmentName}
-                  onChange={(e) => updateStandard({ departmentName: e.target.value })}
+                  value={standard.officeOrDepartmentName}
+                  onChange={(e) => updateStandard({ officeOrDepartmentName: e.target.value })}
                   className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-medium text-slate-900"
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  ខេត្ត / ស្រុក (ជួរទី២ ខាងឆ្វេង)
+                  ស្រុក / ខេត្ត (ជួរទី២ ខាងឆ្វេង)
                 </label>
                 <input
                   type="text"
-                  value={standard.provinceOrDistrict}
-                  onChange={(e) => updateStandard({ provinceOrDistrict: e.target.value })}
+                  value={standard.districtOrProvince}
+                  onChange={(e) => updateStandard({ districtOrProvince: e.target.value })}
                   className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-medium text-slate-900"
                 />
               </div>
@@ -537,7 +563,7 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
                   onChange={(e) =>
                     updateStandard({
                       schoolName: e.target.value,
-                      presenterTitle: `នាយក ${e.target.value}`,
+                      presenterTitle: `នាយក${e.target.value}`,
                     })
                   }
                   className="w-full bg-white border border-blue-400 rounded-xl px-3 py-2 font-bold text-blue-950"
@@ -546,7 +572,7 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  ចំណងជើងអ្នកផ្តល់ប័ណ្ណ (ក្រោមពាក្យ ប័ណ្ណសរសើរ)
+                  ចំណងជើងអ្នកផ្តល់ប័ណ្ណ (ពណ៌ខៀវក្រោម ប័ណ្ណសរសើរ)
                 </label>
                 <input
                   type="text"
@@ -558,7 +584,7 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  លេខប័ណ្ណសរសើរ (លេខ ៖ ...)
+                  លេខប័ណ្ណសរសើរ (លេខ: ...)
                 </label>
                 <input
                   type="text"
@@ -601,8 +627,8 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
                     type="text"
                     value={standard.directorTitle}
                     onChange={(e) => updateStandard({ directorTitle: e.target.value })}
-                    className="w-24 bg-white border border-slate-300 rounded-xl px-2.5 py-2 font-bold text-slate-900"
-                    placeholder="នាយក"
+                    className="w-28 bg-white border border-slate-300 rounded-xl px-2.5 py-2 font-bold text-slate-900"
+                    placeholder="នាយកសាលា"
                   />
                   <input
                     type="text"
@@ -612,15 +638,25 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
                     placeholder="ឈ្មោះនាយក"
                   />
                 </div>
-                <label className="flex items-center gap-1.5 mt-1.5 cursor-pointer text-[11px] font-semibold text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={standard.showDirectorName}
-                    onChange={(e) => updateStandard({ showDirectorName: e.target.checked })}
-                  />
-                  <UserCheck className="w-3.5 h-3.5 text-blue-800" />
-                  <span>បង្ហាញឈ្មោះនាយកខាងក្រោមហត្ថលេខា</span>
-                </label>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <label className="flex items-center gap-1 cursor-pointer text-[11px] font-semibold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={standard.showDirectorName}
+                      onChange={(e) => updateStandard({ showDirectorName: e.target.checked })}
+                    />
+                    <UserCheck className="w-3.5 h-3.5 text-blue-800" />
+                    <span>បង្ហាញឈ្មោះនាយក</span>
+                  </label>
+                  <label className="flex items-center gap-1 cursor-pointer text-[11px] font-semibold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={standard.showCenterWatermark}
+                      onChange={(e) => updateStandard({ showCenterWatermark: e.target.checked })}
+                    />
+                    <span>ដាក់ឡូហ្គោសាលាព្រាលៗនៅកណ្តាល</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -752,184 +788,188 @@ export const HonorCertificateModal: React.FC<HonorCertificateModalProps> = ({
             selectedCertificates.map((cert) => (
               <div
                 key={cert.studentId}
-                className="certificate-print-page mx-auto bg-white shadow-xl print:shadow-none relative overflow-hidden w-[1080px] h-[763px] select-none"
+                className="certificate-print-page mx-auto bg-white shadow-xl print:shadow-none relative overflow-hidden w-[1120px] h-[792px] select-none"
               >
-                {/* 1. AUTHENTIC KHMER FLORAL BORDER FRAME FROM SAMPLE IMAGE */}
+                {/* 1. EXACT SELF-CONTAINED BASE64 CERTIFICATE FRAME FROM USER'S UPLOADED SAMPLE */}
                 <img
-                  src="/assets/aistudio/image_a13de6ed.png"
-                  alt="Khmer Certificate Frame"
+                  src={CERTIFICATE_FRAME_URL}
+                  alt="Official Certificate Frame"
                   className="absolute inset-0 w-full h-full object-fill pointer-events-none"
                   style={{ filter: getFrameFilter() }}
                 />
 
-                {/* 2. SURGICAL WHITE INNER CANVAS (Strictly inside the inner blue frame line: top 18.2% to bottom 12.2%) */}
+                {/* Optional: If user chooses to replace top-center emblem with School Logo */}
+                {standard.useSchoolLogoAtTopCenter && (
+                  <div
+                    className="absolute flex items-center justify-center bg-white rounded-full"
+                    style={{
+                      top: '20px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: '132px',
+                      height: '138px',
+                    }}
+                  >
+                    <div className="w-[116px] h-[116px] rounded-full p-1 bg-white border-2 border-amber-500 shadow-xs flex items-center justify-center overflow-hidden">
+                      <img
+                        src={activeSchoolLogo}
+                        alt={standard.schoolName}
+                        className="w-full h-full object-contain rounded-full"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. INNER CERTIFICATE CONTENT AREA (Strictly inside the inner red line of image_ef1b4f2f.png: top 18.2%, bottom 13.8%, left 10.5%, right 10.8%) */}
                 <div
-                  className="absolute bg-white overflow-hidden"
+                  className="absolute overflow-hidden"
                   style={{
                     top: '18.2%',
-                    bottom: '12.2%',
-                    left: '15.65%',
-                    right: '15.25%',
+                    bottom: '13.8%',
+                    left: '10.6%',
+                    right: '10.8%',
                   }}
                 >
-                  {/* 3. CENTER FADED SCHOOL LOGO WATERMARK (Uses our School Logo instead of Ministry Logo) */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <img
-                      src={activeSchoolLogo}
-                      alt="School Watermark"
-                      className="w-[290px] h-[290px] object-contain rounded-full opacity-[0.15]"
-                    />
-                  </div>
+                  {/* 3. CENTER FADED SCHOOL LOGO WATERMARK */}
+                  {standard.showCenterWatermark && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <img
+                        src={activeSchoolLogo}
+                        alt="School Watermark"
+                        className="w-[270px] h-[270px] object-contain rounded-full opacity-[0.13]"
+                      />
+                    </div>
+                  )}
 
-                  {/* 4. CERTIFICATE CONTENT LAYER (Strictly budgeted to 530px inner height so nothing touches the frame) */}
-                  <div className="relative z-10 w-full h-full flex flex-col justify-between px-6 pt-1 pb-3 text-slate-950 box-border">
-                    {/* TOP SECTION: Kingdom Motto (Center), School Info (Left), School Logo (Right) */}
-                    <div className="relative w-full">
-                      {/* Center Top: Kingdom of Cambodia */}
-                      <div className="text-center space-y-0.5">
-                        <div className="font-moul text-[15px] text-black tracking-wide leading-[1.6]">
-                          ព្រះរាជាណាចក្រកម្ពុជា
+                  {/* 4. EXACT LAYOUT & TYPOGRAPHY MATCHING THE UPLOADED SAMPLE (image_ef1b4f2f.png) */}
+                  <div className="relative z-10 w-full h-full flex flex-col justify-between px-4 py-1 text-slate-950 box-border">
+                    {/* TOP ROW: Left (Office, District, School, Number) & Right (Kingdom of Cambodia Motto) */}
+                    <div className="flex items-start justify-between w-full">
+                      {/* Left Column (pushed slightly down just like the sample) */}
+                      <div className="text-left space-y-2 pt-7">
+                        <div className="font-moul text-[14.5px] text-black leading-[1.65]">
+                          {standard.officeOrDepartmentName}
                         </div>
-                        <div className="font-moul text-[14px] text-black tracking-wide leading-[1.6]">
-                          ជាតិ សាសនា ព្រះមហាក្សត្រ
+                        <div className="font-moul text-[14.5px] text-black leading-[1.65]">
+                          {standard.districtOrProvince}
                         </div>
-                        {/* Ornamental Divider under Motto */}
-                        <div className="flex items-center justify-center pt-0.5">
-                          <svg
-                            width="110"
-                            height="12"
-                            viewBox="0 0 120 14"
-                            className="text-black fill-current"
-                          >
-                            <path
-                              d="M4 7 Q14 2, 24 7 T44 7 L52 7 M68 7 L76 7 Q86 2, 96 7 T116 7"
-                              stroke="currentColor"
-                              strokeWidth="1.6"
-                              fill="none"
-                            />
-                            <polygon points="60,1 65,7 60,13 55,7" fill="currentColor" />
-                            <circle cx="49" cy="7" r="2" fill="currentColor" />
-                            <circle cx="71" cy="7" r="2" fill="currentColor" />
-                          </svg>
+                        <div className="font-moul text-[14.5px] text-black leading-[1.65]">
+                          {standard.schoolName}
+                        </div>
+                        <div className="text-[14.5px] text-black leading-[1.65]">
+                          <span>លេខ: </span>
+                          <span className="tracking-widest text-slate-700">
+                            {standard.certificateNumber}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Left Top: Department, Province/District, School Name, Number & Right Top: School Logo */}
-                      <div className="flex items-start justify-between -mt-2">
-                        <div className="text-left space-y-1">
-                          <div className="font-moul text-[12.5px] text-black leading-[1.65]">
-                            {standard.departmentName}
-                          </div>
-                          <div className="font-moul text-[12.5px] text-black leading-[1.65]">
-                            {standard.provinceOrDistrict}
-                          </div>
-                          <div className="font-moul text-[12.5px] text-black leading-[1.65]">
-                            {standard.schoolName}
-                          </div>
-                          <div className="text-[12.5px] text-black leading-[1.65]">
-                            <span className="font-moul">លេខ ៖ </span>
-                            <span className="font-serif tracking-widest">
-                              {standard.certificateNumber}
-                            </span>
-                          </div>
+                      {/* Right Column: Kingdom of Cambodia Motto (Top-Right under the red line, matching sample) */}
+                      <div className="text-center pr-2 pt-1 space-y-1.5">
+                        <div className="font-moul text-[16px] text-black tracking-wide leading-[1.65]">
+                          ព្រះរាជាណាចក្រកម្ពុជា
                         </div>
-
-                        {/* Right Top: Official School Logo */}
-                        <div className="pr-3 -mt-1">
-                          <div className="w-[88px] h-[88px] rounded-full p-1 bg-white border-2 border-amber-500 shadow-2xs flex items-center justify-center overflow-hidden">
-                            <img
-                              src={activeSchoolLogo}
-                              alt={standard.schoolName}
-                              className="w-full h-full object-contain rounded-full"
-                            />
-                          </div>
+                        <div className="font-moul text-[16px] text-black tracking-wide leading-[1.65]">
+                          ជាតិ សាសនា ព្រះមហាក្សត្រ
+                        </div>
+                        <div className="text-xs font-bold text-black tracking-widest pt-0.5">
+                          ❖ ❖ ❖
                         </div>
                       </div>
                     </div>
 
-                    {/* MIDDLE SECTION: Main Red "ប័ណ្ណសរសើរ" Heading, Presenter Title, and 2-Line Citation Text */}
-                    <div className="text-center -mt-3">
-                      {/* Large Red 3D Outlined Khmer Moul Title */}
-                      <h1
-                        className="font-moul text-[40px] leading-[1.45] tracking-normal select-none"
-                        style={{
-                          color: '#d90000',
-                          WebkitTextStroke: '1.4px #111111',
-                          textShadow: '2px 2.5px 0px rgba(0, 0, 0, 0.85)',
-                        }}
-                      >
-                        ប័ណ្ណសរសើរ
-                      </h1>
+                    {/* CENTER HEADINGS: Red "ប័ណ្ណសរសើរ", Blue "នាយកសាលា...", Blue "សូមគោរពសរសើរចំពោះ" */}
+                    <div className="text-center -mt-4 space-y-1">
+                      <div className="inline-block">
+                        <h1 className="font-moul text-[28px] text-[#d91b1b] leading-[1.5] tracking-wide">
+                          ប័ណ្ណសរសើរ
+                        </h1>
+                        <div className="text-[10px] text-[#d91b1b] tracking-[0.25em] -mt-1.5 font-bold">
+                          ...........................................
+                        </div>
+                      </div>
 
-                      {/* Presenter Line: នាយក អនុវិទ្យាល័យ ... */}
-                      <div className="font-moul text-[17px] text-black mt-0.5 leading-[1.65]">
+                      <div className="font-moul text-[16px] text-[#1d63b8] leading-[1.7]">
                         {standard.presenterTitle}
                       </div>
 
-                      {/* 2-Line Citation Paragraph cleanly formatted so it never wraps onto a 3rd line */}
-                      <div className="mt-2 text-left px-3 text-[15.5px] text-black leading-[2.0] font-medium">
-                        <div className="indent-10 whitespace-nowrap overflow-hidden text-ellipsis">
-                          <span>សូមសរសើរសិស្សឈ្មោះ </span>
-                          <span className="font-moul text-[17.5px] text-[#0033a0] mx-1.5">
-                            {cert.khmerName}
-                          </span>
-                          <span> ភេទ{cert.gender} ជាសិស្សរៀននៅ </span>
-                          <strong className="font-bold text-black mx-0.5">
-                            {formattedClassName}
-                          </strong>
-                          <span> ដែលបានទទួលលទ្ធផលល្អ</span>
-                        </div>
-                        <div className="whitespace-nowrap">
-                          <span>ក្នុងការសិក្សា ហើយត្រូវបានជាប់ចំណាត់ថ្នាក់លេខ </span>
-                          <span
-                            className="font-moul text-[18.5px] mx-1.5"
-                            style={{
-                              color: '#e00000',
-                              WebkitTextStroke: '0.7px #111111',
-                            }}
-                          >
-                            {toKhmerNum(cert.rank)}
-                          </span>
-                          <span> ក្នុងឆ្នាំសិក្សា {standard.academicYear} ។</span>
-                        </div>
+                      <div className="text-[15.5px] font-semibold text-[#1d63b8] leading-[1.6]">
+                        {standard.complimentLine}
                       </div>
                     </div>
 
-                    {/* BOTTOM SECTION: Centered 4x6 Photo Frame & Bottom-Right Date + Director Signature Space */}
-                    <div className="relative w-full h-[126px] flex items-start justify-center">
-                      {/* Center 4x6 Photo Box (រូបថតថ្មី ទំហំ ៤×៦) — Fits 100% inside the white area above the blue frame */}
-                      <div className="w-[88px] h-[118px] border-[1.5px] border-black flex flex-col items-center justify-center text-center bg-white/70 overflow-hidden shadow-2xs">
-                        {standard.showStudentPhotoInBox ? (
-                          <img
-                            src={cert.photo}
-                            alt={cert.khmerName}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = DEFAULT_STUDENT_AVATAR;
-                            }}
-                          />
-                        ) : (
-                          <div className="space-y-2.5 text-[13px] text-black font-semibold">
-                            <div>រូបថតថ្មី</div>
-                            <div>ទំហំ ៤×៦</div>
-                          </div>
-                        )}
+                    {/* BODY CITATION PARAGRAPH (3 Lines matching sample word-for-word) */}
+                    <div className="text-center px-2 text-[15.5px] text-black leading-[2.1] font-medium -mt-1">
+                      <div>
+                        <span>សិស្សឈ្មោះ </span>
+                        <span className="font-moul text-[17px] text-[#0038a8] mx-1.5">
+                          {cert.khmerName}
+                        </span>
+                        <span> ភេទ </span>
+                        <strong className="font-bold text-black mx-1">{cert.gender}</strong>
+                        <span> រៀននៅ </span>
+                        <strong className="font-bold text-black mx-1">
+                          {formattedClassName}
+                        </strong>
+                        <span> នៃ</span>
+                        <strong className="font-moul text-[14.5px] text-black mx-1">
+                          {standard.schoolName}
+                        </strong>
+                        <span> ដែល</span>
                       </div>
 
-                      {/* Bottom Right: Location/Date, Director Title, and Clean Signature Space inside the frame */}
-                      <div className="absolute right-4 top-0 text-center min-w-[240px]">
-                        <div className="text-[14.5px] text-black font-medium leading-[1.6]">
+                      <div>
+                        <span>បានយកចិត្តទុកដាក់ ខិតខំសិក្សារៀនសូត្រ ទទួលបានចំណាត់ថ្នាក់លេខ </span>
+                        <span
+                          className="font-moul text-[18px] mx-1.5"
+                          style={{
+                            color: '#d91b1b',
+                          }}
+                        >
+                          {toKhmerNum(cert.rank)}
+                        </span>
+                        <span> ប្រចាំឆ្នាំសិក្សា {standard.academicYear} ។</span>
+                      </div>
+
+                      <div>{standard.blessingLine}</div>
+                    </div>
+
+                    {/* BOTTOM SECTION: Optional 4x6 Photo Box & Bottom-Right Date + Director */}
+                    <div className="relative w-full h-[112px] flex items-start justify-center">
+                      {standard.showPhotoBox && (
+                        <div className="w-[82px] h-[108px] border border-black flex flex-col items-center justify-center text-center bg-white/80 overflow-hidden">
+                          {standard.showStudentPhotoInBox ? (
+                            <img
+                              src={cert.photo}
+                              alt={cert.khmerName}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = DEFAULT_STUDENT_AVATAR;
+                              }}
+                            />
+                          ) : (
+                            <div className="space-y-2 text-[12.5px] text-black font-medium">
+                              <div>រូបថតថ្មី</div>
+                              <div>ទំហំ ៤×៦</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Bottom Right: Location/Date & Director Title */}
+                      <div className="absolute right-6 top-0 text-center min-w-[260px]">
+                        <div className="text-[15px] text-black font-medium leading-[1.65]">
                           {standard.locationAndDate}
                         </div>
-                        <div className="font-moul text-[15px] text-black mt-1.5 leading-[1.6]">
+                        <div className="font-moul text-[15px] text-black mt-1.5 leading-[1.65]">
                           {standard.directorTitle}
                         </div>
                         {standard.showDirectorName ? (
-                          <div className="font-moul text-[13.5px] text-black mt-11 leading-[1.6]">
+                          <div className="font-moul text-[14px] text-black mt-10 leading-[1.6]">
                             {standard.directorName}
                           </div>
                         ) : (
-                          <div className="h-14" />
+                          <div className="h-12" />
                         )}
                       </div>
                     </div>
