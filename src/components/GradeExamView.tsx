@@ -28,6 +28,7 @@ import { storage } from '../services/storage.ts';
 import { calculateRankings } from '../utils/calculations.ts';
 import { safeAvatar } from '../utils/avatar.ts';
 import { exportExamReportToExcel } from '../utils/excelExport.ts';
+import { HonorCertificateModal } from './HonorCertificateModal.tsx';
 
 interface GradeExamViewProps {
   students: Student[];
@@ -58,6 +59,8 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
   const [isAddSubjectModalOpen, setIsAddSubjectModalOpen] = useState(false);
   const [subjectToRemove, setSubjectToRemove] = useState<Subject | null>(null);
   const [quickNewSubjectName, setQuickNewSubjectName] = useState('');
+  const [isHonorCertModalOpen, setIsHonorCertModalOpen] = useState(false);
+  const [honorCertStudentId, setHonorCertStudentId] = useState<string | undefined>(undefined);
 
   // Max score configuration state
   const [isConfiguringMaxScore, setIsConfiguringMaxScore] = useState(false);
@@ -393,6 +396,18 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
+              onClick={() => {
+                setHonorCertStudentId(undefined);
+                setIsHonorCertModalOpen(true);
+              }}
+              className="px-4 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer border border-amber-600/30"
+            >
+              <Award className="w-4 h-4 text-red-900" />
+              <span>បោះពុម្ពប័ណ្ណសរសើរ (តាមស្តង់ដារសាលា)</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleExportCsv}
               className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
             >
@@ -724,20 +739,34 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
                       <td className="py-3 px-3 text-slate-700 font-medium">{res.remarks}</td>
 
                       <td className="py-3 px-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onPrintOfficialReport('exam', {
-                              exam: currentExam,
-                              classInfo: currentClass,
-                              results: [res],
-                              student: s,
-                            })
-                          }
-                          className="px-2.5 py-1 text-[11px] font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
-                        >
-                          ព្រឹត្តិបត្របុគ្គល
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHonorCertStudentId(res.studentId);
+                              setIsHonorCertModalOpen(true);
+                            }}
+                            className="px-2.5 py-1 text-[11px] font-bold text-amber-950 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                            title="បង្កើត និងបោះពុម្ពប័ណ្ណសរសើរ"
+                          >
+                            <Award className="w-3.5 h-3.5 text-amber-700" />
+                            <span>ប័ណ្ណសរសើរ</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onPrintOfficialReport('exam', {
+                                exam: currentExam,
+                                classInfo: currentClass,
+                                results: [res],
+                                student: s,
+                              })
+                            }
+                            className="px-2.5 py-1 text-[11px] font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+                          >
+                            ព្រឹត្តិបត្របុគ្គល
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1283,6 +1312,23 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Official School Standard Honor Certificate Modal */}
+      <HonorCertificateModal
+        isOpen={isHonorCertModalOpen}
+        onClose={() => {
+          setIsHonorCertModalOpen(false);
+          setHonorCertStudentId(undefined);
+        }}
+        students={students}
+        classes={classes}
+        exams={exams}
+        examResults={examResults}
+        initialClassId={selectedClassId}
+        initialExamId={selectedExamId}
+        initialStudentId={honorCertStudentId}
+        precomputedResults={currentResults}
+      />
     </div>
   );
 };

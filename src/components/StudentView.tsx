@@ -20,6 +20,7 @@ import {
   FileCheck,
   CheckSquare,
   Square,
+  Award,
 } from 'lucide-react';
 import { Student, SchoolClass, Gender, StudentStatus } from '../types/index.ts';
 import { storage } from '../services/storage.ts';
@@ -28,6 +29,7 @@ import { safeAvatar, DEFAULT_STUDENT_AVATAR } from '../utils/avatar.ts';
 import { StudentImportModal } from './StudentImportModal.tsx';
 import { IdCardGeneratorModal } from './IdCardGeneratorModal.tsx';
 import { StudyCertificateModal } from './StudyCertificateModal.tsx';
+import { HonorCertificateModal } from './HonorCertificateModal.tsx';
 import { exportStudentListToExcel } from '../utils/excelExport.ts';
 import { KhmerFourCorners } from './KhmerOrnament.tsx';
 
@@ -53,6 +55,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isIdCardModalOpen, setIsIdCardModalOpen] = useState(false);
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+  const [isHonorCertModalOpen, setIsHonorCertModalOpen] = useState(false);
   const [selectedStudentForCert, setSelectedStudentForCert] = useState<Student | undefined>(undefined);
   const [importNotification, setImportNotification] = useState<string>('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -255,6 +258,15 @@ export const StudentView: React.FC<StudentViewProps> = ({
             >
               <FileCheck className="w-4 h-4 text-indigo-700" />
               <span>លិខិតបញ្ជាក់</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsHonorCertModalOpen(true)}
+              className="px-3.5 py-2 text-xs font-bold bg-amber-400/90 hover:bg-amber-400 text-slate-950 border border-amber-500 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <Award className="w-4 h-4 text-red-900" />
+              <span>ប័ណ្ណសរសើរ</span>
             </button>
 
             <button
@@ -893,6 +905,17 @@ export const StudentView: React.FC<StudentViewProps> = ({
         students={students}
         classes={classes}
         preSelectedStudent={selectedStudentForCert}
+      />
+
+      {/* Feature 4: Official School Standard Honor Certificate Modal */}
+      <HonorCertificateModal
+        isOpen={isHonorCertModalOpen}
+        onClose={() => setIsHonorCertModalOpen(false)}
+        students={students}
+        classes={classes}
+        exams={storage.getExams()}
+        examResults={storage.getDatabase().examResults}
+        initialClassId={selectedClassId !== 'all' ? selectedClassId : classes[0]?.id}
       />
     </div>
   );
