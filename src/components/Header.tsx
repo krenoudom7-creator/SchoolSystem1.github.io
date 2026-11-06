@@ -109,7 +109,7 @@ export const Header: React.FC<HeaderProps> = ({
                   អនុវិទ្យាល័យ ហ៊ុន សែន ទួលសំបួរ
                 </h1>
                 <span className="hidden sm:inline-block px-2.5 py-0.5 text-[11px] font-semibold bg-amber-100/90 text-amber-900 border border-amber-300 rounded-md leading-relaxed">
-                  ❖ ឆ្នាំសិក្សា ២០២៥-២០២៦
+                  ❖ ឆ្នាំសិក្សា {storage.getCurrentAcademicYear()?.name || '២០២៥-២០២៦'}
                 </span>
                 {/* RGB Glow Online Pill */}
                 <span className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold text-slate-800 bg-white border border-emerald-400 rounded-full shadow-xs rgb-glow-pill leading-relaxed">

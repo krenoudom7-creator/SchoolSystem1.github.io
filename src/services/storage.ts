@@ -258,7 +258,115 @@ const INITIAL_TIMETABLE: TimetableSlot[] = [
   { id: 'tt-23', classId: 'cls-7a', dayOfWeek: 'សៅរ៍', period: 3, startTime: '09:00', endTime: '09:50', subjectId: 'sbj-khmer', subjectName: 'ភាសាខ្មែរ', teacherId: 'tch-1', teacherName: 'កែវ សុខា', room: 'បន្ទប់ ១០១' },
 ];
 
+const DEFAULT_EXAM_SUBJECT_IDS = [
+  'sbj-khmer',
+  'sbj-math',
+  'sbj-physics',
+  'sbj-chem',
+  'sbj-bio',
+  'sbj-eng',
+];
+
 const INITIAL_EXAMS: Exam[] = [
+  {
+    id: 'ex-jan-2026',
+    title: 'ការប្រឡងប្រចាំខែ មករា',
+    type: 'monthly',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ១',
+    month: 'មករា',
+    date: '2026-01-25',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
+  {
+    id: 'ex-feb-2026',
+    title: 'ការប្រឡងប្រចាំខែ កុម្ភៈ',
+    type: 'monthly',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ១',
+    month: 'កុម្ភៈ',
+    date: '2026-02-25',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
+  {
+    id: 'ex-mar-2026',
+    title: 'ការប្រឡងប្រចាំខែ មីនា',
+    type: 'monthly',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ១',
+    month: 'មីនា',
+    date: '2026-03-25',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
+  {
+    id: 'ex-apr-2026',
+    title: 'ការប្រឡងប្រចាំខែ មេសា',
+    type: 'monthly',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ២',
+    month: 'មេសា',
+    date: '2026-04-25',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
+  {
+    id: 'ex-may-2026',
+    title: 'ការប្រឡងប្រចាំខែ ឧសភា',
+    type: 'monthly',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ២',
+    month: 'ឧសភា',
+    date: '2026-05-25',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
+  {
+    id: 'ex-jun-2026',
+    title: 'ការប្រឡងប្រចាំខែ មិថុនា',
+    type: 'monthly',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ២',
+    month: 'មិថុនា',
+    date: '2026-06-25',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
+  {
+    id: 'ex-jul-2026',
+    title: 'ការប្រឡងប្រចាំខែ កក្កដា',
+    type: 'monthly',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ២',
+    month: 'កក្កដា',
+    date: '2026-07-25',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
+  {
+    id: 'ex-aug-2026',
+    title: 'ការប្រឡងប្រចាំខែ សីហា',
+    type: 'monthly',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ២',
+    month: 'សីហា',
+    date: '2026-08-25',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
+  {
+    id: 'ex-sep-2026',
+    title: 'ការប្រឡងប្រចាំខែ កញ្ញា',
+    type: 'monthly',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ២',
+    month: 'កញ្ញា',
+    date: '2026-09-25',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
   {
     id: 'ex-oct-2026',
     title: 'ការប្រឡងប្រចាំខែ តុលា',
@@ -268,7 +376,49 @@ const INITIAL_EXAMS: Exam[] = [
     month: 'តុលា',
     date: '2026-10-25',
     maxScorePerSubject: 50,
-    subjectIds: ['sbj-khmer', 'sbj-math', 'sbj-physics', 'sbj-chem', 'sbj-bio', 'sbj-eng'],
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
+  {
+    id: 'ex-nov-2026',
+    title: 'ការប្រឡងប្រចាំខែ វិច្ឆិកា',
+    type: 'monthly',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ១',
+    month: 'វិច្ឆិកា',
+    date: '2026-11-25',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
+  {
+    id: 'ex-dec-2026',
+    title: 'ការប្រឡងប្រចាំខែ ធ្នូ',
+    type: 'monthly',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ១',
+    month: 'ធ្នូ',
+    date: '2026-12-25',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
+  {
+    id: 'ex-sem1-2026',
+    title: 'ការប្រឡងឆមាសទី ១',
+    type: 'semester',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ១',
+    date: '2026-03-30',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
+  },
+  {
+    id: 'ex-sem2-2026',
+    title: 'ការប្រឡងឆមាសទី ២',
+    type: 'semester',
+    academicYearId: 'ay-2025-2026',
+    semester: 'ឆមាសទី ២',
+    date: '2026-07-30',
+    maxScorePerSubject: 50,
+    subjectIds: [...DEFAULT_EXAM_SUBJECT_IDS],
   },
 ];
 
@@ -659,6 +809,7 @@ class StorageService {
           classes: this.db.classes,
           teachers: this.db.teachers,
           examResults: this.db.examResults,
+          academicYears: this.db.academicYears,
           users: this.db.users,
           deletedIds: this.db.deletedIds || [],
         }),
@@ -733,6 +884,15 @@ class StorageService {
             }
           });
           this.db.attendanceSessions = Array.from(sessMap.values());
+        }
+
+        if (Array.isArray(st.academicYears) && st.academicYears.length > 0) {
+          const deletedSet = this.getDeletedSet();
+          const filteredRemote = st.academicYears.filter((ay: AcademicYear) => !deletedSet.has(ay.id));
+          if (JSON.stringify(filteredRemote) !== JSON.stringify(this.db.academicYears)) {
+            this.db.academicYears = filteredRemote;
+            changed = true;
+          }
         }
 
         if (changed) {
@@ -1018,6 +1178,20 @@ class StorageService {
             : INITIAL_BEHAVIOR_RECORDS;
           parsed.teachers = parsed.teachers && parsed.teachers.length > 0 ? parsed.teachers : INITIAL_TEACHERS;
           parsed.timetable = parsed.timetable && parsed.timetable.length > 0 ? parsed.timetable : INITIAL_TIMETABLE;
+          // Ensure all 12 monthly exams and both semester exams exist while preserving existing exam configurations
+          const existingExamsMap = new Map<string, Exam>();
+          (parsed.exams || []).forEach((ex) => existingExamsMap.set(ex.id, ex));
+          const mergedExams: Exam[] = INITIAL_EXAMS.map((initEx) => {
+            const existing = existingExamsMap.get(initEx.id);
+            if (existing) {
+              existingExamsMap.delete(initEx.id);
+              return existing;
+            }
+            return { ...initEx, subjectIds: [...(initEx.subjectIds || DEFAULT_EXAM_SUBJECT_IDS)] };
+          });
+          // Append any custom user-created exams
+          existingExamsMap.forEach((customEx) => mergedExams.push(customEx));
+          parsed.exams = mergedExams;
           if (!parsed.telegramSettings || parsed.telegramSettings.botToken?.includes('Simulated') || !parsed.telegramSettings.botUsername) {
             parsed.telegramSettings = {
               botUsername: '@machin_caffee_bot',
@@ -1785,6 +1959,20 @@ class StorageService {
 
   // Exams & Grading
   public getExams(): Exam[] {
+    if (!this.db.exams || this.db.exams.length < INITIAL_EXAMS.length) {
+      const existingMap = new Map<string, Exam>();
+      (this.db.exams || []).forEach((ex) => existingMap.set(ex.id, ex));
+      const merged: Exam[] = INITIAL_EXAMS.map((initEx) => {
+        const found = existingMap.get(initEx.id);
+        if (found) {
+          existingMap.delete(initEx.id);
+          return found;
+        }
+        return { ...initEx, subjectIds: [...(initEx.subjectIds || DEFAULT_EXAM_SUBJECT_IDS)] };
+      });
+      existingMap.forEach((customEx) => merged.push(customEx));
+      this.db.exams = merged;
+    }
     return this.db.exams;
   }
 
@@ -1965,21 +2153,106 @@ class StorageService {
 
   // Academic Years
   public getAcademicYears(): AcademicYear[] {
+    if (!Array.isArray(this.db.academicYears)) {
+      this.db.academicYears = INITIAL_ACADEMIC_YEARS;
+    }
     return this.db.academicYears;
   }
 
+  public getCurrentAcademicYear(): AcademicYear | undefined {
+    const years = this.getAcademicYears();
+    return years.find((ay) => ay.isCurrent) || years[0];
+  }
+
   public addAcademicYear(data: Omit<AcademicYear, 'id'>, actorName = 'Admin'): AcademicYear {
-    if (data.isCurrent) {
+    if (!Array.isArray(this.db.academicYears)) {
+      this.db.academicYears = [];
+    }
+    if (data.isCurrent || this.db.academicYears.length === 0) {
       this.db.academicYears.forEach((ay) => (ay.isCurrent = false));
     }
     const newAy: AcademicYear = {
       ...data,
+      isCurrent: data.isCurrent || this.db.academicYears.length === 0,
       id: `ay-${Date.now()}`,
     };
-    this.db.academicYears.push(newAy);
+    this.unmarkDeleted([newAy.id]);
+    this.db.academicYears.unshift(newAy);
     this.logAudit(actorName, 'admin', 'បង្កើតឆ្នាំសិក្សា', `បង្កើតឆ្នាំសិក្សា ${newAy.name}`);
     this.saveDatabase(this.db);
     return newAy;
+  }
+
+  public updateAcademicYear(
+    id: string,
+    updates: Partial<Omit<AcademicYear, 'id'>>,
+    actorName = 'Admin'
+  ): boolean {
+    if (!Array.isArray(this.db.academicYears)) return false;
+    const index = this.db.academicYears.findIndex((ay) => ay.id === id);
+    if (index === -1) return false;
+
+    if (updates.isCurrent) {
+      this.db.academicYears.forEach((ay) => {
+        ay.isCurrent = ay.id === id;
+      });
+    }
+
+    this.db.academicYears[index] = {
+      ...this.db.academicYears[index],
+      ...updates,
+    };
+
+    // Ensure at least one academic year remains current if any exist
+    if (this.db.academicYears.length > 0 && !this.db.academicYears.some((ay) => ay.isCurrent)) {
+      this.db.academicYears[0].isCurrent = true;
+    }
+
+    this.logAudit(
+      actorName,
+      'admin',
+      'កែប្រែឆ្នាំសិក្សា',
+      `កែប្រែឆ្នាំសិក្សា ${this.db.academicYears[index].name} (${this.db.academicYears[index].currentSemester})`
+    );
+    this.saveDatabase(this.db);
+    return true;
+  }
+
+  public setCurrentAcademicYear(id: string, actorName = 'Admin'): boolean {
+    if (!Array.isArray(this.db.academicYears)) return false;
+    const target = this.db.academicYears.find((ay) => ay.id === id);
+    if (!target) return false;
+
+    this.db.academicYears.forEach((ay) => {
+      ay.isCurrent = ay.id === id;
+    });
+
+    this.logAudit(
+      actorName,
+      'admin',
+      'កំណត់ឆ្នាំសិក្សាបច្ចុប្បន្ន',
+      `កំណត់ឆ្នាំសិក្សា ${target.name} ជាឆ្នាំសិក្សាបច្ចុប្បន្ន`
+    );
+    this.saveDatabase(this.db);
+    return true;
+  }
+
+  public deleteAcademicYear(id: string, actorName = 'Admin'): boolean {
+    if (!Array.isArray(this.db.academicYears)) return false;
+    const target = this.db.academicYears.find((ay) => ay.id === id);
+    if (!target) return false;
+
+    this.markDeleted([id]);
+    this.db.academicYears = this.db.academicYears.filter((ay) => ay.id !== id);
+
+    // If the deleted academic year was the current one, promote the first remaining year to current
+    if (target.isCurrent && this.db.academicYears.length > 0) {
+      this.db.academicYears[0].isCurrent = true;
+    }
+
+    this.logAudit(actorName, 'admin', 'លុបឆ្នាំសិក្សា', `លុបឆ្នាំសិក្សា ${target.name}`);
+    this.saveDatabase(this.db);
+    return true;
   }
 
   // Notifications & Bell Alerts

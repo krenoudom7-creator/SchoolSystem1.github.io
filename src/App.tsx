@@ -241,7 +241,7 @@ export default function App() {
       <div className="md:hidden bg-slate-900 text-white px-2.5 py-1 flex items-center justify-between no-print sticky top-[48px] sm:top-[74px] z-20 shadow-xs border-b border-amber-500/20">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-[11px] font-semibold text-amber-300 truncate">
-            ❖ ប្រព័ន្ធគ្រប់គ្រងសាលារៀន (២០២៥-២០២៦)
+            ❖ ប្រព័ន្ធគ្រប់គ្រងសាលារៀន ({dbState.academicYears?.find((a) => a.isCurrent)?.name || dbState.academicYears?.[0]?.name || '២០២៥-២០២៦'})
           </span>
         </div>
         <button

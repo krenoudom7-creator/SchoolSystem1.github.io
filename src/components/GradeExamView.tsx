@@ -49,7 +49,9 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
   onRefresh,
   onPrintOfficialReport,
 }) => {
-  const [selectedExamId, setSelectedExamId] = useState<string>(exams[0]?.id || '');
+  const [selectedExamId, setSelectedExamId] = useState<string>(
+    () => exams.find((e) => e.id === 'ex-oct-2026')?.id || exams[0]?.id || ''
+  );
   const [selectedClassId, setSelectedClassId] = useState<string>(classes[0]?.id || 'cls-7a');
   const [activeTab, setActiveTab] = useState<'ranking' | 'input'>('ranking');
   const [isSavedSuccess, setIsSavedSuccess] = useState(false);
@@ -75,6 +77,9 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
   const currentExam = exams.find((e) => e.id === selectedExamId) || exams[0];
   const currentClass = classes.find((c) => c.id === selectedClassId) || classes[0];
   const classStudents = students.filter((s) => s.classId === selectedClassId);
+
+  const monthlyExams = exams.filter((e) => e.type === 'monthly');
+  const semesterExams = exams.filter((e) => e.type === 'semester');
 
   // Helper to get max score for an individual subject in current exam
   const getSubjectMax = (subjectId: string): number => {
@@ -432,23 +437,114 @@ export const GradeExamView: React.FC<GradeExamViewProps> = ({
           </div>
         </div>
 
+        {/* Quick Selector Bar: All 12 Months & Both Semesters */}
+        <div className="mt-5 pt-4 border-t border-slate-100 space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+              <span>📅 ជ្រើសរើសរហ័ស៖ ខែទាំង ១២ និង ឆមាសទាំង ២</span>
+              <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-900 border border-blue-200 text-[10px]">
+                កំពុងជ្រើសរើស៖ {currentExam?.title} ({currentExam?.semester})
+              </span>
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            {monthlyExams.map((ex) => {
+              const isSelected = ex.id === currentExam?.id;
+              return (
+                <button
+                  key={ex.id}
+                  type="button"
+                  onClick={() => setSelectedExamId(ex.id)}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    isSelected
+                      ? 'bg-blue-900 text-white border-blue-950 shadow-xs'
+                      : 'bg-slate-50 hover:bg-blue-50 text-slate-700 border-slate-200'
+                  }`}
+                >
+                  ខែ{ex.month || ex.title.replace('ការប្រឡងប្រចាំខែ ', '')}
+                </button>
+              );
+            })}
+
+            <span className="h-5 w-px bg-slate-200 mx-1 hidden sm:inline-block" />
+
+            {semesterExams.map((ex) => {
+              const isSelected = ex.id === currentExam?.id;
+              return (
+                <button
+                  key={ex.id}
+                  type="button"
+                  onClick={() => setSelectedExamId(ex.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1 ${
+                    isSelected
+                      ? 'bg-amber-500 text-slate-950 border-amber-600 shadow-xs'
+                      : 'bg-amber-50/70 hover:bg-amber-100 text-amber-950 border-amber-300'
+                  }`}
+                >
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  <span>{ex.semester}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Filters, Max Score Pre-config & Tabs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5 pt-4 border-t border-slate-100">
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-              សម័យប្រឡង
-            </label>
-            <select
-              value={selectedExamId}
-              onChange={(e) => setSelectedExamId(e.target.value)}
-              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-900 focus:outline-hidden font-medium text-slate-900"
-            >
-              {exams.map((ex) => (
-                <option key={ex.id} value={ex.id}>
-                  {ex.title} ({ex.semester})
-                </option>
-              ))}
-            </select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-100">
+          <div className="space-y-2">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                សម័យប្រឡង (ខែទាំង ១២ និង ឆមាសទាំង ២)
+              </label>
+              <select
+                value={selectedExamId}
+                onChange={(e) => setSelectedExamId(e.target.value)}
+                className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-900 focus:outline-hidden font-bold text-slate-900"
+              >
+                <optgroup label="📅 ការប្រឡងប្រចាំខែ (ទាំង ១២ ខែ)">
+                  {monthlyExams.map((ex) => (
+                    <option key={ex.id} value={ex.id}>
+                      {ex.title} ({ex.semester})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="🎓 ការប្រឡងឆមាស (ទាំង ២ ឆមាស)">
+                  {semesterExams.map((ex) => (
+                    <option key={ex.id} value={ex.id}>
+                      {ex.title} ({ex.semester})
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                ឆមាស (Semester ១ ឬ ២)
+              </label>
+              <select
+                value={currentExam?.semester || 'ឆមាសទី ១'}
+                onChange={(e) => {
+                  const newSem = e.target.value;
+                  if (!currentExam) return;
+                  if (currentExam.type === 'semester') {
+                    const targetSemExam = semesterExams.find((se) => se.semester === newSem);
+                    if (targetSemExam) {
+                      setSelectedExamId(targetSemExam.id);
+                    }
+                  } else {
+                    storage.updateExam(currentExam.id, { semester: newSem });
+                    showToast(`បានកំណត់ «${currentExam.title}» ទៅក្នុង «${newSem}»!`);
+                    onRefresh();
+                  }
+                }}
+                className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2 focus:ring-2 focus:ring-blue-900 focus:outline-hidden font-semibold text-blue-950"
+              >
+                <option value="ឆមាសទី ១">ឆមាសទី ១ (Semester 1)</option>
+                <option value="ឆមាសទី ២">ឆមាសទី ២ (Semester 2)</option>
+              </select>
+            </div>
           </div>
 
           <div>
